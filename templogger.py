@@ -184,7 +184,6 @@ class Templog():
                     self.templist4 = np.delete(self.templist4, 0)
             #Warte bis die Microsekunden wieder den Wert 50000 erreicht hat
             time.sleep(1 - ((datetime.datetime.now().microsecond - 50000)/1000000))
-        print("timer beendet")
     
     #Funktion zum laden der Konfigurationsdatei
     def kalibrierung_laden(self):
@@ -449,7 +448,6 @@ class Templog():
                 header_geschrieben = True #Flag setzten zur Markierung, dass der Header geschrieben wurde
                 #Schreibe den Datensatz in die Protokolldatei
                 schreiber.writerow(datensatz)
-        print("protokoll thread beendet")
 
     #Funktion für den Thread für die Darstellung der Echtzeitdaten im Graphen
     #Schleife zur wiederholten Darstellung der Messdaten im Graph, bis dieser über eine Flag beendet wird
@@ -487,18 +485,13 @@ class Templog():
             anzeigen = [self.GUI.sensorvar1.get(), self.GUI.sensorvar2.get(), self.GUI.sensorvar3.get(), self.GUI.sensorvar4.get()] #Ermitteln welche Sensoren im Graph angezeigt werden sollen und dies in einer Liste speichern
             #sta = datetime.datetime.now()
             self.Graph.update(anzeigen,None,None) #Funktion zum update des Graphen aufrufen
-            #dauer = datetime.datetime.now()-sta
-            #print("Dauer für Graph update: {}\t\t{}".format(dauer.total_seconds(),len(self.datumlist)))
-            #with open("log_zeichen_dauer.csv","a") as datei:
-            #    schreiber = csv.writer(datei,delimiter=';')
-            #    schreiber.writerow([dauer.total_seconds(),len(self.datumlist)])
+            #print("Dauer für Graph update: {}\t\t{}".format((datetime.datetime.now()-sta).total_seconds(),len(self.datumlist)))
             #Wenn der Thread beendet werden soll verlasse die Schleife
             if self.stop_all_threads.is_set():break
             self.GUI.update_sensor_label(anzeigen,temp1,temp2,temp3,temp4) #Temperaturanzeige der Sensoren updaten
             self.GUI.update_treeview(datum,temp1,temp2,temp3,temp4) #Textlog der letzten Darstellungszeitpunkte updaten
             #Flag setzten um zu signalisieren, dass der Graph neu gezeichnet wurde
             self.zeichnen_fertig.set()
-        print("zeichnen threat beendet")
 
     #Funktion für den Thread für die Darstellung der Differenztemperatur im Graphen
     #Schleife zur wiederholten Darstellung der Differenzmessdaten im Graph, bis dieser über eine Flag beendet wird
@@ -538,7 +531,6 @@ class Templog():
             self.GUI.update_treeview(datum,temp1,temp2) #Textlog der letzten Darstellungszeitpunkte updaten
             #Flag setzten um zu signalisieren, dass der Graph neu gezeichnet wurde
             self.zeichnen_fertig.set()
-        print("differenz threat beendet")
     
     #Funktion zum beenden der Threads
     def threads_stop(self,timer_thread,protokoll_thread,graph_thread):
@@ -546,14 +538,12 @@ class Templog():
         if self.messung_gestartet:
             #Wenn die Variable ein Thread ist, dann...
             if timer_thread != None:
-                #print("sek_timer thread versuchen zu beenden")
                 timer_thread.join() #Warte bis der Thread beendet ist
             
             #Wenn die Variable ein Thread ist, dann...
             if protokoll_thread != None:
                 #Schleife bis der Thread beendet wurde
                 while True:
-                    #print("protokoll thread versuchen zu beenden")
                     #Wenn der Thread noch läuft, dann...
                     if protokoll_thread.is_alive():
                         #Thread aufwecken
@@ -568,7 +558,6 @@ class Templog():
             if graph_thread != None:
                 #Schleife bis der Thread beendet wurde
                 while True:
-                    #print("zeichnen thread versuchen zu beenden")
                     #Wenn der Thread noch läuft, dann...
                     if graph_thread.is_alive():
                         #Thread aufwecken
@@ -824,7 +813,6 @@ class GUI():
             self.aktuallisierung_beendet.set()
             return
         #Funktion aufrufen um den Graphen zu aktuallisieren
-        print("neu zeichnen")
         thr = threading.Thread(target=self.Graphmonitor.update,args=([self.sensorvar1.get(), self.sensorvar2.get(), self.sensorvar3.get(), self.sensorvar4.get()],self.Templogger.sen1,self.Templogger.sen2))
         thr.start()
         #self.Graphmonitor.update([self.sensorvar1.get(), self.sensorvar2.get(), self.sensorvar3.get(), self.sensorvar4.get()],self.Templogger.sen1,self.Templogger.sen2)

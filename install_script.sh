@@ -4,15 +4,15 @@ user=$(logname)
 script_pfad=$(realpath -s "$0")
 script_ordner_pfad=$(dirname "$script_pfad")
 
-echo "########################################################################"
-echo "Repository klonen"
-sudo git clone https://github.com/tocar133/templogger_hsma.git "$script_ordner_pfad/Templogger"
-if [ $? -eq 0 ]; then
-    echo "Repository wurde geklont"
-    sudo chown -R "$user":"$user" "$script_ordner_pfad/Templogger"
-else
-    echo "Repository wurde nicht geklont"
-fi
+#echo "########################################################################"
+#echo "Repository klonen"
+#sudo git clone https://github.com/tocar133/templogger_hsma.git "$script_ordner_pfad/Templogger"
+#if [ $? -eq 0 ]; then
+#    echo "Repository wurde geklont"
+#    sudo chown -R "$user":"$user" "$script_ordner_pfad/Templogger"
+#else
+#    echo "Repository wurde nicht geklont"
+#fi
 #read a
 
 echo "########################################################################"
@@ -20,11 +20,12 @@ echo "Desktop Shortcut erstellen"
 if test -f "/home/$user/Desktop/Templogger.desktop"; then
     echo "/home/$user/Desktop/Templogger.desktop existiert bereits."
 else
+    #Exec=lxterminal -t "Templogger Konsole" -e python3 $script_ordner_pfad/Templogger/templogger.py
     sudo echo "[Desktop Entry]
     Type=Application
     Encoding=UTF-8
     Name=Templogger starten
-    Exec=lxterminal -t "Templogger Konsole" -e python3 $script_ordner_pfad/Templogger/templogger.py
+    Exec=lxterminal -t "Templogger Konsole" -e python3 $script_ordner_pfad/templogger.py
     Terminal=true
     X-KeepTerminal=true" >> "/home/$user/Desktop/Templogger.desktop"
     if [ $? -eq 0 ]; then
@@ -68,7 +69,8 @@ fi
 if test -f "/home/$user/.matchbox/keyboard.xml"; then
     echo "/home/$user/.matchbox/keyboard.xml existiert bereits."
 else
-    sudo cp "$script_ordner_pfad/Templogger/keyboard.xml" "/home/$user/.matchbox"
+    #sudo cp "$script_ordner_pfad/Templogger/keyboard.xml" "/home/$user/.matchbox"
+    sudo cp "$script_ordner_pfad/keyboard.xml" "/home/$user/.matchbox"
     if [ $? -eq 0 ]; then
         sudo chown -R "$user":"$user" "/home/$user/.matchbox"
         echo "Tastaturlayout wurde kopiert"

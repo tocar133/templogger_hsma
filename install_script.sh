@@ -6,9 +6,10 @@ script_ordner_pfad=$(dirname "$script_pfad")
 
 echo "########################################################################"
 echo "Repository klonen"
-git clone https://github.com/tocar133/templogger_hsma.git Templogger
+sudo git clone https://github.com/tocar133/templogger_hsma.git "$script_ordner_pfad/Templogger"
 if [ $? -eq 0 ]; then
     echo "Repository wurde geklont"
+    sudo chown -R "$user":"$user" "$script_ordner_pfad/Templogger"
 else
     echo "Repository wurde nicht geklont"
 fi
@@ -19,14 +20,15 @@ echo "Desktop Shortcut erstellen"
 if test -f "/home/$user/Desktop/Templogger.desktop"; then
     echo "/home/$user/Desktop/Templogger.desktop existiert bereits."
 else
-    echo "[Desktop Entry]
+    sudo echo "[Desktop Entry]
     Type=Application
     Encoding=UTF-8
     Name=Templogger starten
-    Exec=/usr/bin/python3 $script_ordner_pfad/Templogger/templogger.py
+    Exec=lxterminal -t "Templogger Konsole" -e python3 $script_ordner_pfad/Templogger/templogger.py
     Terminal=true
     X-KeepTerminal=true" >> "/home/$user/Desktop/Templogger.desktop"
     if [ $? -eq 0 ]; then
+        sudo chown "$user":"$user" "/home/$user/Desktop/Templogger.desktop"
         echo "Desktop Shortcut wurde erstellt"
     else
         echo "Desktop Shortcut wurde nicht erstellt"
@@ -39,14 +41,15 @@ echo "Templogger Autostart einrichten"
 if [ -d "/home/$user/.config/autostart" ]; then
     echo "/home/$user/.config/autostart existiert bereits"
 else
-    mkdir "/home/$user/.config/autostart"
+    sudo mkdir "/home/$user/.config/autostart"
     echo "autostartordner erstellt"
 fi
 if test -f "/home/$user/.config/autostart/Templogger.desktop"; then
     echo "/home/$user/.config/autostart/Templogger.desktop existiert bereits."
 else
-    cp "/home/$user/Desktop/Templogger.desktop" "/home/$user/.config/autostart/Templogger.desktop"
+    sudo cp "/home/$user/Desktop/Templogger.desktop" "/home/$user/.config/autostart/Templogger.desktop"
     if [ $? -eq 0 ]; then
+        sudo chown -R "$user":"$user" "/home/$user/.config/autostart"
         echo "Templogger Autostart wurde eingerichtet"
     else
         echo "Templogger Autostart wurde nicht eingerichtet"
@@ -59,24 +62,25 @@ echo "Tastaturlayout kopieren"
 if [ -d "/home/$user/.matchbox" ]; then
     echo "/home/$user/.matchbox existiert bereits"
 else
-    mkdir "/home/$user/.matchbox"
+    sudo mkdir "/home/$user/.matchbox"
     echo "tastaturordner erstellt"
 fi
 if test -f "/home/$user/.matchbox/keyboard.xml"; then
     echo "/home/$user/.matchbox/keyboard.xml existiert bereits."
 else
-    cp "Templogger/keyboard.xml" "/home/$user/.matchbox"
+    sudo cp "$script_ordner_pfad/Templogger/keyboard.xml" "/home/$user/.matchbox"
     if [ $? -eq 0 ]; then
-        echo "Tastaturlayout wurde kopieren"
+        sudo chown -R "$user":"$user" "/home/$user/.matchbox"
+        echo "Tastaturlayout wurde kopiert"
     else
-        echo "Tastaturlayout wurde nicht kopieren"
+        echo "Tastaturlayout wurde nicht kopiert"
     fi
 fi
 #read a
 
 echo "########################################################################"
 echo "update startet"
-apt-get update
+sudo apt-get update
 if [ $? -eq 0 ]; then
     echo "system wurde geupdatet"
 else
@@ -86,7 +90,7 @@ fi
 
 echo "########################################################################"
 echo "system upgrade startet"
-apt-get -y upgrade
+sudo sudo apt-get -y upgrade
 if [ $? -eq 0 ]; then
     echo "system wurde geupgradet"
 else
@@ -96,17 +100,17 @@ fi
 
 echo "########################################################################"
 echo "matplotlib installieren"
-pip install matplotlib
+sudo pip install matplotlib
 if [ $? -eq 0 ]; then
-    echo "matplotlib wurde installieren"
+    echo "matplotlib wurde installiert"
 else
-    echo "matplotlib wurde nicht installieren"
+    echo "matplotlib wurde nicht installiert"
 fi
 #read a
 
 echo "########################################################################"
 echo "numpy upgrade"
-pip install numpy --upgrade
+sudo pip install numpy --upgrade
 if [ $? -eq 0 ]; then
     echo "numpy wurde geupgradet"
 else
@@ -116,71 +120,71 @@ fi
 
 echo "########################################################################"
 echo "libatlas-base-dev installieren"
-apt-get -y install libatlas-base-dev
+sudo apt-get -y install libatlas-base-dev
 if [ $? -eq 0 ]; then
-    echo "libatlas-base-dev wurde installieren"
+    echo "libatlas-base-dev wurde installiert"
 else
-    echo "libatlas-base-dev wurde nicht installieren"
+    echo "libatlas-base-dev wurde nicht installiert"
 fi
 #read a
 
 echo "########################################################################"
 echo "python3-pil.imagetk installieren"
-apt-get -y install python3-pil.imagetk
+sudo apt-get -y install python3-pil.imagetk
 if [ $? -eq 0 ]; then
-    echo "python3-pil.imagetk wurde installieren"
+    echo "python3-pil.imagetk wurde installiert"
 else
-    echo "python3-pil.imagetk wurde nicht installieren"
+    echo "python3-pil.imagetk wurde nicht installiert"
 fi
 #read a
 
 echo "########################################################################"
 echo "adafruit-blinka installieren"
-pip3 install adafruit-blinka
+sudo pip3 install adafruit-blinka
 if [ $? -eq 0 ]; then
-    echo "adafruit_blinka wurde installieren"
+    echo "adafruit_blinka wurde installiert"
 else
-    echo "adafruit_blinka wurde nicht installieren"
+    echo "adafruit_blinka wurde nicht installiert"
 fi
 #read a
 
 echo "########################################################################"
 echo "adafruit-circuitpython-max31865 installieren"
-pip3 install adafruit-circuitpython-max31865
+sudo pip3 install adafruit-circuitpython-max31865
 if [ $? -eq 0 ]; then
-    echo "adafruit-circuitpython-max31865 wurde installieren"
+    echo "adafruit-circuitpython-max31865 wurde installiert"
 else
-    echo "adafruit-circuitpython-max31865 wurde nicht installieren"
+    echo "adafruit-circuitpython-max31865 wurde nicht installiert"
 fi
 #read a
 
 echo "########################################################################"
 echo "adafruit-extended-bus installieren"
-pip3 install adafruit-extended-bus
+sudo pip3 install adafruit-extended-bus
 if [ $? -eq 0 ]; then
-    echo "adafruit-extended-bus wurde installieren"
+    echo "adafruit-extended-bus wurde installiert"
 else
-    echo "adafruit-extended-bus wurde nicht installieren"
+    echo "adafruit-extended-bus wurde nicht installiert"
 fi
 #read a
 
 echo "########################################################################"
 echo "matchbox-keyboard installieren"
-apt-get install matchbox-keyboard
+sudo apt-get -y install matchbox-keyboard
 if [ $? -eq 0 ]; then
-    echo "keyboard wurde installieren"
+    echo "keyboard wurde installiert"
 else
-    echo "keyboard wurde nicht installieren"
+    echo "keyboard wurde nicht installiert"
 fi
 #read a
 
 echo "########################################################################"
 echo "x11vnc installieren"
-apt-get -y install x11vnc
+sudo apt-get -y install x11vnc
 if [ $? -eq 0 ]; then
-    echo "x11vnc wurde installieren"
+    echo "x11vnc wurde installiert"
 else
-    echo "x11vnc wurde nicht installieren"
+    echo "x11vnc wurde nicht installiert"
 fi
 #read a
 
@@ -189,19 +193,19 @@ echo "x11vnc passwort setzen"
 if [ -d "/home/$user/.vnc" ]; then
     echo "/home/$user/.vnc existiert bereits"
 else
-    mkdir "/home/$user/.vnc"
+    sudo mkdir "/home/$user/.vnc"
     echo "benutzer .vnc ordner erstellt"
 fi
 if test -f "/home/$user/.vnc/passwd"; then
     echo "/home/$user/.vnc/passwd existiert bereits."
 else
-    touch "/home/$user/.vnc/passwd"
-    x11vnc -storepasswd 'Templogger' "/home/$user/.vnc/passwd"
-    chmod 644 "/home/$user/.vnc/passwd"
+    sudo touch "/home/$user/.vnc/passwd"
+    sudo x11vnc -storepasswd 'Templogger' "/home/$user/.vnc/passwd"
     if [ $? -eq 0 ]; then
-        echo "x11vnc passwort wurde gesetzen"
+        sudo chown -R "$user":"$user" "/home/$user/.vnc"
+        echo "x11vnc passwort wurde gesetzt"
     else
-        echo "x11vnc passwort wurde nicht setzen"
+        echo "x11vnc passwort wurde nicht gesetzt"
     fi
 fi
 #read a
@@ -211,22 +215,23 @@ echo "Remote Desktop Services Autostart einrichten"
 if test -f "/home/$user/.config/autostart/x11vnc.desktop"; then
     echo "/home/$user/.config/autostart/x11vnc.desktop existiert bereits."
 else
-    echo "[Desktop Entry]
+    sudo echo "[Desktop Entry]
     Type=Application
     Name=X11VNC
     Exec=x11vnc -usepw -forever -display :0
     StartupNotify=false" >> "/home/$user/.config/autostart/x11vnc.desktop"
     if [ $? -eq 0 ]; then
-        echo "Remote Desktop Services Autostart wurde eingerichten"
+        sudo chown -R "$user":"$user" "/home/$user/.config/autostart"
+        echo "Remote Desktop Services Autostart wurde eingerichtet"
     else
-        echo "Remote Desktop Services Autostart wurde nicht eingerichten"
+        echo "Remote Desktop Services Autostart wurde nicht eingerichtet"
     fi
 fi
 #read a
 
 echo "########################################################################"
 echo "SPI einschalten"
-echo "dtparam=spi=on" >> '/boot/config.txt'
+sudo echo "dtparam=spi=on" >> '/boot/config.txt'
 if [ $? -eq 0 ]; then
     echo "SPI wurde eingeschaltet"
 else
@@ -236,7 +241,7 @@ fi
 
 echo "########################################################################"
 echo "SSH Port zu 3756 aendern"
-echo 'Port 3756' >> '/etc/ssh/sshd_config'
+sudo echo 'Port 3756' >> '/etc/ssh/sshd_config'
 if [ $? -eq 0 ]; then
     echo "SSH Port wurde geaendert"
 else

@@ -25,7 +25,7 @@ else
     Type=Application
     Encoding=UTF-8
     Name=Templogger starten
-    Exec=lxterminal -t "Templogger Konsole" -e python3 $script_ordner_pfad/templogger.py
+    Exec=lxterminal -t 'Templogger Konsole' -e python3 $script_ordner_pfad/templogger.py
     Terminal=true
     X-KeepTerminal=true" >> "/home/$user/Desktop/Templogger.desktop"
     if [ $? -eq 0 ]; then

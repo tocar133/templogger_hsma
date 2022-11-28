@@ -4,17 +4,6 @@ user=$(logname)
 script_pfad=$(realpath -s "$0")
 script_ordner_pfad=$(dirname "$script_pfad")
 
-#echo "########################################################################"
-#echo "Repository klonen"
-#sudo git clone https://github.com/tocar133/templogger_hsma.git "$script_ordner_pfad/Templogger"
-#if [ $? -eq 0 ]; then
-#    echo "Repository wurde geklont"
-#    sudo chown -R "$user":"$user" "$script_ordner_pfad/Templogger"
-#else
-#    echo "Repository wurde nicht geklont"
-#fi
-#read a
-
 echo "########################################################################"
 echo "Desktop Shortcut erstellen"
 if test -f "/home/$user/Desktop/Templogger.desktop"; then

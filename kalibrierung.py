@@ -22,6 +22,7 @@ class Kalibrierung():
         #Versuche die Eingabe zu einer float Zahl zu konvertieren
         try:
             temp_ref = float(temp_ref)
+            temp_ref = round(temp_ref,3)
         #Wenn das Konvertieren fehlgeschlagen ist, dann öffne ein Fenster mit einer Fehlermeldung und kehre zum eingabe Fenster zurück
         except:
             messagebox.showerror(parent=popup_window,title = "Fehlerhafte Eingabe", message = "Bitte geben Sie eine Zahl ein.")

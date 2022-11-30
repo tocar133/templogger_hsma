@@ -11,12 +11,12 @@ if test -f "/home/$user/Desktop/Templogger.desktop"; then
 else
     #Exec=lxterminal -t "Templogger Konsole" -e python3 $script_ordner_pfad/Templogger/templogger.py
     sudo echo "[Desktop Entry]
-    Type=Application
-    Encoding=UTF-8
-    Name=Templogger starten
-    Exec=lxterminal -t 'Templogger Konsole' -e python3 $script_ordner_pfad/templogger.py
-    Terminal=true
-    X-KeepTerminal=true" >> "/home/$user/Desktop/Templogger.desktop"
+Type=Application
+Encoding=UTF-8
+Name=Templogger starten
+Exec=lxterminal -t 'Templogger Konsole' -e python3 $script_ordner_pfad/templogger.py
+Terminal=true
+X-KeepTerminal=true" >> "/home/$user/Desktop/Templogger.desktop"
     if [ $? -eq 0 ]; then
         sudo chown "$user":"$user" "/home/$user/Desktop/Templogger.desktop"
         echo "Desktop Shortcut wurde erstellt"
@@ -207,10 +207,10 @@ if test -f "/home/$user/.config/autostart/x11vnc.desktop"; then
     echo "/home/$user/.config/autostart/x11vnc.desktop existiert bereits."
 else
     sudo echo "[Desktop Entry]
-    Type=Application
-    Name=X11VNC
-    Exec=x11vnc -usepw -forever -display :0
-    StartupNotify=false" >> "/home/$user/.config/autostart/x11vnc.desktop"
+Type=Application
+Name=X11VNC
+Exec=x11vnc -usepw -forever -display :0
+StartupNotify=false" >> "/home/$user/.config/autostart/x11vnc.desktop"
     if [ $? -eq 0 ]; then
         sudo chown -R "$user":"$user" "/home/$user/.config/autostart"
         echo "Remote Desktop Services Autostart wurde eingerichtet"
@@ -239,6 +239,40 @@ else
     echo "SSH Port wurde nicht geaendert"
 fi
 #read a
+
+echo "########################################################################"
+echo "Display config"
+sudo echo "hdmi_group=2
+hdmi_mode=87
+hdmi_cvt 1280 800 60 6 0 0 0
+hdmi_drive=1" >> '/boot/config.txt'
+if [ $? -eq 0 ]; then
+    echo "Konfiguration für Display erfolgreich"
+else
+    echo "Konfiguration für Display nicht erfolgreich"
+fi
+#read a
+
+echo "########################################################################"
+echo "Tool für Display Helligkeit installieren"
+git clone https://github.com/waveshare/RPi-USB-Brightness "$script_ordner_pfad/RPi-USB-Brightness"
+if [ $? -eq 0 ]; then
+    echo "Helligkeitstool wurde heruntergeladen"
+
+    cd "$script_ordner_pfad/RPi-USB-Brightness/32/desktop"
+    sudo "./install.sh"
+    if [ $? -eq 0 ]; then
+        sudo rm -r "$script_ordner_pfad/RPi-USB-Brightness"
+        echo "Helligkeitstool wurde installiert"
+    else
+        echo "Helligkeitstool wurde nicht installiert"
+    fi
+else
+    echo "Herunterladen des Helligkeitstool fehlgeschlagen"
+fi
+cd "$script_ordner_pfad"
+#read a
+
 
 echo "########################################################################"
 echo "Fertig, bitte druecke Sie Enter zum neustarten"

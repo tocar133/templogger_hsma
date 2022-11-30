@@ -21,12 +21,15 @@ import platform
 import sys
 import datetime
 import time
+import traceback
 import dateutil
 import subprocess
 import numpy as np
 import threading
 import psutil
 import tkinter as tk
+from tkinter import PhotoImage
+from tkinter.font import Font
 from tkinter import Toplevel, messagebox, ttk, filedialog
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolbar2Tk
 import matplotlib.pyplot as plt
@@ -165,6 +168,11 @@ class Templog():
             #Wenn der Timer pausiert ist, dann...
             else:
                 self.zeichnen_sekunden_counter = darstellungsrate #Setze den Zähler fürs Neuzeichnen auf die Darstellungsrate, damit nach der Pause eine neue Zeichnung beginnt
+                if protokollierungsrate > 0:
+                    if protokoll_sekunden_counter != 2 * protokollierungsrate:
+                        with self.protokollieren_warten:
+                            self.protokollieren_warten.notify() #Wecke den Thread zum Neuzeichnen auf
+                    protokoll_sekunden_counter = 2 * protokollierungsrate
                 warten_zeichen_counter += 1 #Zähler für die passende Darstellung nach einer Pause erhöhen
                 #Wenn der Zähler für die passende Darstellung nach einer Pause höher oder gleich der Darstellungsrate ist, dann
                 if warten_zeichen_counter >= darstellungsrate:
@@ -429,6 +437,8 @@ class Templog():
             #Wenn ein Fehler bei dem laden der Kalibrierung war, dann den Text der Kalibrierung auf unkalibriert setzten
             if self.kalibrierfehler:
                 kalibrierung = " (unkalibriert)"
+            if not self.timer_run.is_set():
+                datensatz = ["Messung wurd pausiert",self.zeit_stempel.strftime("%Y.%m.%d %H:%M:%S")]
             #Protokolldatei zum erweitern öffnen
             with open(dateipfad, 'a', newline='') as datei:
                 schreiber = csv.writer(datei,delimiter=';') #Variable zum schreiben in die Protokolldatei erstellen
@@ -491,6 +501,7 @@ class Templog():
             self.GUI.update_treeview(datum,temp1,temp2,temp3,temp4) #Textlog der letzten Darstellungszeitpunkte updaten
             #Flag setzten um zu signalisieren, dass der Graph neu gezeichnet wurde
             self.zeichnen_fertig.set()
+        print("zeichen Thread beendet")
 
     #Funktion für den Thread für die Darstellung der Differenztemperatur im Graphen
     #Schleife zur wiederholten Darstellung der Differenzmessdaten im Graph, bis dieser über eine Flag beendet wird
@@ -530,9 +541,10 @@ class Templog():
             self.GUI.update_treeview(datum,temp1,temp2) #Textlog der letzten Darstellungszeitpunkte updaten
             #Flag setzten um zu signalisieren, dass der Graph neu gezeichnet wurde
             self.zeichnen_fertig.set()
+        print("zeichen Thread beendet")
     
     #Funktion zum beenden der Threads
-    def threads_stop(self,timer_thread,protokoll_thread,graph_thread):
+    def threads_stop(self,timer_thread,protokoll_thread,graph_thread,protokollieren_warten,zeichnen_warten):
         #Wenn eine Messung gestartet wurde, dann beende die gestarteten Threads
         if self.messung_gestartet:
             #Wenn die Variable ein Thread ist, dann...
@@ -546,8 +558,8 @@ class Templog():
                     #Wenn der Thread noch läuft, dann...
                     if protokoll_thread.is_alive():
                         #Thread aufwecken
-                        with self.protokollieren_warten:
-                            self.protokollieren_warten.notify()
+                        with protokollieren_warten:
+                            protokollieren_warten.notify()
                         #Warten bis Thread beendet wurde, max Wartezeit 0,5 Sek
                         protokoll_thread.join(0.5)
                     #Wenn der Thread nicht läuft, dann Schleife verlassen
@@ -560,8 +572,8 @@ class Templog():
                     #Wenn der Thread noch läuft, dann...
                     if graph_thread.is_alive():
                         #Thread aufwecken
-                        with self.zeichnen_warten:
-                            self.zeichnen_warten.notify()
+                        with zeichnen_warten:
+                            zeichnen_warten.notify()
                         #Warten bis Thread beendet wurde, max Wartezeit 0,5 Sek
                         graph_thread.join(0.5)
                     #Wenn der Thread nicht läuft, dann Schleife verlassen
@@ -596,7 +608,7 @@ class Templog():
         self.zeichnen_fertig.set()
         self.timer_run.set()
 
-        thr = threading.Thread(target=self.threads_stop,args=(self.sek_timer,self.running_protokoll,self.running_graph))
+        thr = threading.Thread(target=self.threads_stop,args=(self.sek_timer,self.running_protokoll,self.running_graph,self.protokollieren_warten,self.zeichnen_warten))
         thr.start()
 
         time.sleep(1)
@@ -613,6 +625,9 @@ class GUI():
         self.text_log = [] #Definieren der Liste für den Textlog der letzten Darstellungseinträge
         self.aktuallisierung_beendet = threading.Event()
         self.aktuallisierung_beendet.set()
+
+        self.font = (None, 12)
+
         #Erstellen des Programmfensters
         self.root = tk.Tk()
         self.root.title("Templogger") #Programmtitel festlegen
@@ -621,9 +636,19 @@ class GUI():
         self.root.configure(bg="white") #Hintergrundfarbe des Fensters festlegen
         self.root.minsize(width=880,height=350)
 
-        style = ttk.Style()
-        style.theme_use('clam')
-        style.configure('Treeview.Heading', font=("sans-serif",10))
+        #Hintergrundfarbe der Combobox ändern
+        self.style = ttk.Style()
+        self.style.theme_use('clam')
+        self.style.configure("TCombobox",fieldbackground= "light yellow",arrowsize=20)
+        self.style.configure('TSpinbox',fieldbackground= "light yellow",arrowsize=20)
+        self.style.configure('Treeview.Heading', font=("sans-serif",10))
+        
+        self.root.option_add('*TCombobox*Listbox.font', (None,12))
+        self.root.option_add('TCombobox*Font', (None,12))
+
+        self.protokollierungsrate_var = tk.IntVar(value=5)
+        self.darstellungsrate_var = tk.IntVar(value=5) #Variable für die Spinbox zum auswählen der Darstellungsrate
+        self.zeitraum_var = tk.IntVar(value=5) #Variable für die Spinbox zum auswählen des Zeitraums
 
         self.Kalibrierung = kalibrierung.Kalibrierung(self)
         self.Templogger = Templog(self,self.Kalibrierung) #Klassenobjekt zur Temperaturmessung erstellen
@@ -632,34 +657,34 @@ class GUI():
         #Menüleiste und Untermenüs erstellen
         self.menubar = tk.Menu(self.root, background='#22376F', foreground='white', activebackground='white', activeforeground='black') #Menüleiste erstellen
         
-        self.liveGraphsMenu = tk.Menu(self.menubar, tearoff=0) #Menüpunkt zum starten einer Echtzeittemperaturmessung erstellen
-        self.liveGraphsMenu.add_command(label="Messungen starten ohne Daten zu protokollieren", command=self.live_graph_popup) #Untermenüpunt Echtzeitmessung ohne Protokoll
-        self.liveGraphsMenu.add_command(label="Messungen starten, Daten protokollieren ohne einstellbare Abtastrate für die Darstellung", command=self.live_graph_protokoll_static_popup) #Untermenüpunt Echtzeitmessung mit Protokoll bei gleicher Darstellungs- und Protokollrate
-        self.liveGraphsMenu.add_command(label="Messungen starten, Daten protokollieren mit einstellbarer Abtastrate für die Darstellung", command=self.live_graph_protokoll_popup) #Untermenüpunt Echtzeitmessung mit Protokoll
+        self.liveGraphsMenu = tk.Menu(self.menubar, tearoff=0,font = ("", 50)) #Menüpunkt zum starten einer Echtzeittemperaturmessung erstellen
+        self.liveGraphsMenu.add_command(label="Messungen starten ohne Daten zu protokollieren",font = ("", 15), command=self.live_graph_popup) #Untermenüpunt Echtzeitmessung ohne Protokoll
+        self.liveGraphsMenu.add_command(label="Messungen starten, Daten protokollieren ohne einstellbare Abtastrate für die Darstellung",font = ("", 15), command=self.live_graph_protokoll_static_popup) #Untermenüpunt Echtzeitmessung mit Protokoll bei gleicher Darstellungs- und Protokollrate
+        self.liveGraphsMenu.add_command(label="Messungen starten, Daten protokollieren mit einstellbarer Abtastrate für die Darstellung",font = ("", 15), command=self.live_graph_protokoll_popup) #Untermenüpunt Echtzeitmessung mit Protokoll
         
         self.differenzGraphsMenu = tk.Menu(self.menubar, tearoff=0)#Menüpunkt zum starten einer Differenztemperaturmessung erstellen
-        self.differenzGraphsMenu.add_command(label="Messungen für einen Differenzengraphen starten ohne Daten zu protokollieren", command=self.differenz_graph_popup) #Untermenüpunt Differenzmessung ohne Protokoll
-        self.differenzGraphsMenu.add_command(label="Messungen für einen Differenzengraphen starten, Daten protokollieren ohne einstellbare Abtastrate für die Darstellung", command=self.differenz_graph_protokoll_static_popup)#Untermenüpunt Differenzmessung mit Protokoll bei gleicher Darstellungs- und Protokollrate
-        self.differenzGraphsMenu.add_command(label="Messungen für einen Differenzengraphen starten, Daten protokollieren mit einstellbarer Abtastrate für die Darstellung", command=self.differenz_graph_protokoll_popup) #Untermenüpunt Differenzmessung mit Protokoll
+        self.differenzGraphsMenu.add_command(label="Messungen für einen Differenzengraphen starten ohne Daten zu protokollieren",font = ("", 15), command=self.differenz_graph_popup) #Untermenüpunt Differenzmessung ohne Protokoll
+        self.differenzGraphsMenu.add_command(label="Messungen für einen Differenzengraphen starten, Daten protokollieren ohne einstellbare Abtastrate für die Darstellung",font = ("", 15), command=self.differenz_graph_protokoll_static_popup)#Untermenüpunt Differenzmessung mit Protokoll bei gleicher Darstellungs- und Protokollrate
+        self.differenzGraphsMenu.add_command(label="Messungen für einen Differenzengraphen starten, Daten protokollieren mit einstellbarer Abtastrate für die Darstellung",font = ("", 15), command=self.differenz_graph_protokoll_popup) #Untermenüpunt Differenzmessung mit Protokoll
         
         self.loadGraphs = tk.Menu(self.menubar, tearoff=0)#Menüpunkt zum laden protokollierter Daten erstellen
-        self.loadGraphs.add_command(label="Lade existierende Datei und bilde die Daten grafisch ab", command=self.protokoll_daten_popup) #Untermenüpunkt zum laden eines Protokolls einer Echtzeitmessung
-        self.loadGraphs.add_command(label="Lade existierende Datei und bilde einen Differenzgraphen ab", command=self.Protokolldaten_differenz_popup) #Untermenüpunkt zum laden eines Protokolls und der Bildung einer Differenztemperatur
-        self.loadGraphs.add_command(label="Speicherort öffnen", command=self.open_save_folder) #Untermenüpunkt zum öffnen des Speicherorts
+        self.loadGraphs.add_command(label="Lade existierende Datei und bilde die Daten grafisch ab",font = ("", 15), command=self.protokoll_daten_popup) #Untermenüpunkt zum laden eines Protokolls einer Echtzeitmessung
+        self.loadGraphs.add_command(label="Lade existierende Datei und bilde einen Differenzgraphen ab",font = ("", 15), command=self.Protokolldaten_differenz_popup) #Untermenüpunkt zum laden eines Protokolls und der Bildung einer Differenztemperatur
+        self.loadGraphs.add_command(label="Speicherort öffnen",font = ("", 15), command=self.open_save_folder) #Untermenüpunkt zum öffnen des Speicherorts
 
         self.options = tk.Menu(self.menubar, tearoff=0)#Menüpunkt für weitere Bedienpunkte
-        self.options.add_command(label='PT100 Temperatursensoren kalibrieren', command= self.Kalibrierung.start_kalibrieren) #Untermenüpunkt zum starten der Sensorkalibrierung
+        self.options.add_command(label='PT100 Temperatursensoren kalibrieren',font = ("", 15), command=self.Kalibrierung.start_kalibrieren) #Untermenüpunkt zum starten der Sensorkalibrierung
         self.options.add_separator() #Trennstrich zwischen den Untermenüpunkten
-        self.options.add_command(label="Messungen pausieren", command=self.messung_pausieren) #Untermenüpunkt zum pausieren der Messung bzw. zum fortsetzen einer pausierten Messung
-        self.options.add_command(label="Messungen stoppen", command=self.Templogger.stop_messung) #Untermenüpunkt zum stoppen der akutellen Messung
-        self.options.add_command(label="Programm neu starten", command=self.restart) #Untermenüpunkt zum stoppen der aktuellen Messung und zum neustarten des Programms
-        self.options.add_command(label="Beenden", command=self.close) #Untermenüpunkt zum beenden des Programms
+        self.options.add_command(label="Messungen pausieren",font = ("", 15), command=self.messung_pausieren) #Untermenüpunkt zum pausieren der Messung bzw. zum fortsetzen einer pausierten Messung
+        self.options.add_command(label="Messungen stoppen",font = ("", 15), command=self.Templogger.stop_messung) #Untermenüpunkt zum stoppen der akutellen Messung
+        self.options.add_command(label="Programm neu starten",font = ("", 15), command=self.restart) #Untermenüpunkt zum stoppen der aktuellen Messung und zum neustarten des Programms
+        self.options.add_command(label="Beenden",font = ("", 15), command=self.close) #Untermenüpunkt zum beenden des Programms
 
         #Menüpunkte zur Menüleiste hinzufügen und den Name der Menüpunkte festlegen
-        self.menubar.add_cascade(label='Temperaturgraphen', menu=self.liveGraphsMenu)
-        self.menubar.add_cascade(label='Differenztempertaturgraphen', menu=self.differenzGraphsMenu)
-        self.menubar.add_cascade(label='Existierende Dateien laden', menu=self.loadGraphs)
-        self.menubar.add_cascade(label='Weitere Optionen', menu=self.options)
+        self.menubar.add_cascade(label='Temperaturgraphen', menu=self.liveGraphsMenu,font = ("", 15))
+        self.menubar.add_cascade(label='Differenztempertaturgraphen', menu=self.differenzGraphsMenu,font = ("", 15))
+        self.menubar.add_cascade(label='Existierende Dateien laden', menu=self.loadGraphs,font = ("", 15))
+        self.menubar.add_cascade(label='Weitere Optionen', menu=self.options,font = ("", 15))
 
         if platform.system() != "Linux":
             self.liveGraphsMenu.entryconfig(0, state="disabled")
@@ -689,28 +714,47 @@ class GUI():
         self.sensor_leiste_frame = tk.Frame(self.root,bg="lightgrey")
         self.sensor_leiste_frame.pack(fill="x")
         self.sensor_frame = tk.Frame(self.sensor_leiste_frame,bg="lightgrey") #Platzieren der Elemente in einem Frame
+        
+        self.sensor_frame.columnconfigure(1, weight=1)
+        self.sensor_frame.columnconfigure(2, weight=1)
+        self.sensor_frame.columnconfigure(3, weight=1)
+        self.sensor_frame.columnconfigure(4, weight=1)
+        self.sensor_frame.columnconfigure(5, weight=1)
+        self.sensor_frame.columnconfigure(6, weight=1,uniform="a")
+        self.sensor_frame.columnconfigure(7, weight=1,uniform="a")
+        self.sensor_frame.columnconfigure(8, weight=1,uniform="a")
+        self.sensor_frame.columnconfigure(9, weight=1)
+
         self.sensor_frame.pack()
         #Sensorcheckboxen erstellen und platzieren
         self.sensor1_checkbox = tk.Checkbutton(self.sensor_frame,width=18,borderwidth=0,highlightthickness=0,bg="lightgrey", text='Sensor 1', variable=self.sensorvar1, onvalue=1, offvalue=0,command=self.graph_aktualisieren)
         self.sensor2_checkbox = tk.Checkbutton(self.sensor_frame,width=18,borderwidth=0,highlightthickness=0,bg="lightgrey", text='Sensor 2', variable=self.sensorvar2, onvalue=1, offvalue=0,command=self.graph_aktualisieren)
         self.sensor3_checkbox = tk.Checkbutton(self.sensor_frame,width=18,borderwidth=0,highlightthickness=0,bg="lightgrey", text='Sensor 3', variable=self.sensorvar3, onvalue=1, offvalue=0,command=self.graph_aktualisieren)
         self.sensor4_checkbox = tk.Checkbutton(self.sensor_frame,width=18,borderwidth=0,highlightthickness=0,bg="lightgrey", text='Sensor 4', variable=self.sensorvar4, onvalue=1, offvalue=0,command=self.graph_aktualisieren)
-        self.sensor1_checkbox.grid(row=0, column=0)
-        self.sensor2_checkbox.grid(row=0, column=1)
-        self.sensor3_checkbox.grid(row=0, column=2)
-        self.sensor4_checkbox.grid(row=0, column=3)
+        self.sensor1_checkbox.grid(row=0, column=1)
+        self.sensor2_checkbox.grid(row=0, column=2)
+        self.sensor3_checkbox.grid(row=0, column=3)
+        self.sensor4_checkbox.grid(row=0, column=4)
         #Sensortemperaturanzeige erstellen und platzieren
         self.sensor1_label = tk.Label(self.sensor_frame,bg="lightgrey",borderwidth=0,highlightthickness=0, text="nicht ausgewählt")
         self.sensor2_label = tk.Label(self.sensor_frame,bg="lightgrey",borderwidth=0,highlightthickness=0, text="nicht ausgewählt")
         self.sensor3_label = tk.Label(self.sensor_frame,bg="lightgrey",borderwidth=0,highlightthickness=0, text="nicht ausgewählt")
         self.sensor4_label = tk.Label(self.sensor_frame,bg="lightgrey",borderwidth=0,highlightthickness=0, text="nicht ausgewählt")
-        self.sensor1_label.grid(row=1, column=0)
-        self.sensor2_label.grid(row=1, column=1)
-        self.sensor3_label.grid(row=1, column=2)
-        self.sensor4_label.grid(row=1, column=3)
+        self.sensor1_label.grid(row=1, column=1)
+        self.sensor2_label.grid(row=1, column=2)
+        self.sensor3_label.grid(row=1, column=3)
+        self.sensor4_label.grid(row=1, column=4)
 
         self.sensoren_pruefen = tk.Button(self.sensor_frame,text="Sensoren prüfen",command=self.check_sensoren)
-        self.sensoren_pruefen.grid(row=0, column=4)
+        self.sensoren_pruefen.grid(row=0, column=5,rowspan=2)
+
+        self.bild_stopp = PhotoImage(file = self.Templogger.programm_pfad + "/bilder/stopp.png")
+        self.bild_pause = PhotoImage(file = self.Templogger.programm_pfad + "/bilder/pause.png")
+
+        self.stop_button = tk.Button(self.sensor_frame,command=self.Templogger.stop_messung,image=self.bild_stopp)
+        self.stop_button.grid(row=0,column=7,rowspan=2)
+        self.pause_button = tk.Button(self.sensor_frame,command=self.messung_pausieren,image=self.bild_pause)
+        self.pause_button.grid(row=0,column=9,rowspan=2)
 
         if platform.system() != "Linux":
             sensorvar = [self.sensorvar1,self.sensorvar2,self.sensorvar3,self.sensorvar4]
@@ -891,11 +935,19 @@ class GUI():
         #Wenn eine Messung läuft, dann...
         if self.Templogger.timer_run.is_set():
             self.options.entryconfigure(2,label="Messung fortsetzen") #Ändere den Text des Menüeintrags
+            
+            self.bild_pause = PhotoImage(file = self.Templogger.programm_pfad + "/bilder/play.png")
+            self.pause_button["image"] = self.bild_pause
+
             self.Templogger.timer_run.clear() #Lösche die Flag um die Messung zu pausieren
             print("{} Messung pausiert".format(datetime.datetime.now().strftime("%Y.%m.%d %H:%M:%S")))
         #Wenn eine Messung pausiert ist, dann...
         else:
             self.options.entryconfigure(2,label="Messung pausieren") #Ändere den Text des Menüeintrags
+
+            self.bild_pause = PhotoImage(file = self.Templogger.programm_pfad + "/bilder/pause.png")
+            self.pause_button["image"] = self.bild_pause
+
             #Setze die Flag zum fortsetzen der Messung
             self.Templogger.timer_run.set()
             print("{} Messung fortgesetzt".format(datetime.datetime.now().strftime("%Y.%m.%d %H:%M:%S")))
@@ -1199,28 +1251,28 @@ class GUI():
         dateiname = None #Nur Darstellung daher wird kein Dateiname benötigt
         protokollierung = 0 #Nur Darstellung daher soll die Protokollierung deaktiviert sein
         protokollierungsrate = 0 #Nur Darstellung daher wird keine Protokollierungsrate benötigt
-        darstellungsrate_var = tk.StringVar(value=5) #Variable für die Spinbox zum auswählen der Darstellungsrate
-        zeitraum_var = tk.StringVar(value=5) #Variable für die Spinbox zum auswählen des Zeitraums
+        self.darstellungsrate_var = tk.IntVar(value=5) #Variable für die Spinbox zum auswählen der Darstellungsrate
+        self.zeitraum_var = tk.IntVar(value=5) #Variable für die Spinbox zum auswählen des Zeitraums
 
         popup_window = Toplevel(self.root) #Pop Up Fenster erzeugen
-        popup_window.geometry("570x200") #Größe des Pop Up Fensters festlegen
+        popup_window.geometry("630x250") #Größe des Pop Up Fensters festlegen
         #Positions des Hauptfensters abfragen
         x = self.root.winfo_x()
         y = self.root.winfo_y()
-        popup_window.geometry("+%d+%d" % (x + (self.root.winfo_width()-570)/2, y + (self.root.winfo_height()-200)/2)) #Position des Pop Up Fensters festlegen
+        popup_window.geometry("+%d+%d" % (x + (self.root.winfo_width()-630)/2, y + (self.root.winfo_height()-250)/2)) #Position des Pop Up Fensters festlegen
         popup_window.wm_transient(self.root)
         popup_window.title("Einstellungen für die Darstellung") #Titel des Pop Up Fensters festlegen
         
         #Label und Spinbox für die Darstellungsrate erstellen und platzieren
-        darstellungsrate_label = tk.Label(popup_window, text="Darstellungsrate in Sekunden zur Darstellung von Messpunkten (Min. 4 Sek.):", pady=10, padx=20)
+        darstellungsrate_label = tk.Label(popup_window,font=self.font, text="Darstellungsrate in Sekunden zur Darstellung von Messpunkten (Min. 4 Sek.):", pady=10, padx=20)
         darstellungsrate_label.pack()
-        darstellungsrate = tk.Spinbox(popup_window,bg="light yellow",width=30,from_=self.min_darstellungsrate,to=9999999999999999999999,textvariable=darstellungsrate_var)
+        darstellungsrate = ttk.Spinbox(popup_window,font=self.font,width=30,from_=self.min_darstellungsrate,to=9999999999999999999999,textvariable=self.darstellungsrate_var)
         darstellungsrate.pack()
         darstellungsrate.focus() #Spinbox für die Darstellungsrate fokusieren
         #Label und Spinbox für den Zeitraum erstellen und platzieren
-        zeitraum_label = tk.Label(popup_window, text="Abzubildender Zeitraum in Minuten:", pady=10, padx=20)
+        zeitraum_label = tk.Label(popup_window,font=self.font, text="Abzubildender Zeitraum in Minuten:", pady=10, padx=20)
         zeitraum_label.pack()
-        zeitraum = tk.Spinbox(popup_window,bg="light yellow",width=30,from_=1,to=9999999999999999999999,textvariable=zeitraum_var)
+        zeitraum = ttk.Spinbox(popup_window,font=self.font,width=30,from_=1,to=9999999999999999999999,textvariable=self.zeitraum_var)
         zeitraum.pack()
 
         #Funktion zum aufrufen der Prüffunktion der Eingabeparameter
@@ -1230,9 +1282,9 @@ class GUI():
         #Buttons zum Bestätigen oder Abbrechen der Eingabe erstellen und platzieren
         button_frame = tk.Frame(popup_window)
         button_frame.pack(pady=(7,0))
-        okbutton = tk.Button(button_frame, text="Bestätigen", command=aufruf_zum_testen, height=2, width=15)
+        okbutton = tk.Button(button_frame,font=self.font, text="Bestätigen", command=aufruf_zum_testen, height=2, width=15)
         okbutton.pack(side=tk.LEFT)
-        cancelbutton = tk.Button(button_frame, text="Abbrechen", command = popup_window.destroy, height=2, width=15)
+        cancelbutton = tk.Button(button_frame,font=self.font, text="Abbrechen", command = popup_window.destroy, height=2, width=15)
         cancelbutton.pack(side=tk.LEFT)
 
         #Bei dem Ereignis das die Enter Taste gedrückt wurde die Funktion zum Prüfen der Eingabeparameter aufrufen
@@ -1244,36 +1296,36 @@ class GUI():
     #Funktion zum Öffnen eines Pop Up Fensters zur Eingabe der Mess- und Protokollierungsparameter für eine Echtzeittemperaturmessung
     def live_graph_protokoll_static_popup(self):
         protokollierung = 1 #Protokollierung soll aktiviert werden
-        protokollierungs_darstellungs_rate_var = tk.StringVar(value=5) #Variable für die Spinbox zum auswählen der Darstellungs- und Protokollierungsrate
-        zeitraum_var = tk.StringVar(value=5) #Variable für die Spinbox zum auswählen des Zeitraumes
+        self.protokollierungsrate_var = tk.IntVar(value=5) #Variable für die Spinbox zum auswählen der Darstellungs- und Protokollierungsrate
+        self.zeitraum_var = tk.IntVar(value=5) #Variable für die Spinbox zum auswählen des Zeitraumes
 
         popup_window = Toplevel(self.root) #Pop Up Fenster erzeugen
-        popup_window.geometry("580x270")#Größe des Pop Up Fensters festlegen
+        popup_window.geometry("660x320")#Größe des Pop Up Fensters festlegen
         #Positions des Hauptfensters abfragen
         x = self.root.winfo_x()
         y = self.root.winfo_y()
-        popup_window.geometry("+%d+%d" % (x + (self.root.winfo_width()-580)/2, y + (self.root.winfo_height()-270)/2)) #Position des Pop Up Fensters festlegen
+        popup_window.geometry("+%d+%d" % (x + (self.root.winfo_width()-660)/2, y + (self.root.winfo_height()-320)/2)) #Position des Pop Up Fensters festlegen
         # Keep the popup_window in front of the root window
         popup_window.wm_transient(self.root)
         popup_window.title("Einstellungen für Darstellung und Protokollierung") #Titel des Pop Up Fensters festlegen
 
         #Label und Spinbox für den Darstellungs- und Protokollierungsrate erstellen und platzieren
-        protokollierungsrate_label = tk.Label(popup_window, text="Darstellungs- und Protokollierungsrate in Sekunden von Messdaten (Min. 4 Sek.):", pady=10)
+        protokollierungsrate_label = tk.Label(popup_window,font=self.font, text="Darstellungs- und Protokollierungsrate in Sekunden von Messdaten (Min. 4 Sek.):", pady=10)
         protokollierungsrate_label.pack()
-        protokollierungs_darstellungs_rate = tk.Spinbox(popup_window,bg="light yellow",width=30,from_=self.min_darstellungsrate,to=9999999999999999999999,textvariable=protokollierungs_darstellungs_rate_var)
+        protokollierungs_darstellungs_rate = ttk.Spinbox(popup_window,font=self.font,width=30,from_=self.min_darstellungsrate,to=9999999999999999999999,textvariable=self.protokollierungsrate_var)
         protokollierungs_darstellungs_rate.pack()
         protokollierungs_darstellungs_rate.focus() #Spinbox der Darstellungs- und Protokollierungsrate fokusieren
         #Label und Spinbox für den Zeitraum erstellen und platzieren
-        zeitraum_label = tk.Label(popup_window, text="Abzubildender Zeitraum in Minuten:", pady=10, padx=20)
+        zeitraum_label = tk.Label(popup_window,font=self.font, text="Abzubildender Zeitraum in Minuten:", pady=10, padx=20)
         zeitraum_label.pack()
-        zeitraum = tk.Spinbox(popup_window,bg="light yellow",width=30,from_=1,to=9999999999999999999999,textvariable=zeitraum_var)
+        zeitraum = ttk.Spinbox(popup_window,font=self.font,width=30,from_=1,to=9999999999999999999999,textvariable=self.zeitraum_var)
         zeitraum.pack()
         #Label und Eingabefeld für den Dateiname erstellen und platzieren
-        datei_label = tk.Label(popup_window, text="Name der Protokolldatei (Speicherort: {}/Saves)".format(self.Templogger.programm_pfad), pady=10, padx=20)
+        datei_label = tk.Label(popup_window,font=self.font, text="Name der Protokolldatei (Speicherort: {}/Saves)".format(self.Templogger.programm_pfad), pady=10, padx=20)
         datei_label.pack()
-        dateiname = tk.Entry(popup_window, width=40, bg="light yellow")
+        dateiname = tk.Entry(popup_window,font=self.font, width=40, bg="light yellow")
         dateiname.insert(tk.END,"<<Erster Zeitstempel>>")
-        dateiname.pack()
+        dateiname.pack(ipady=7)
 
         #Funktion zum aufrufen der Prüffunktion der Eingabeparameter
         def aufruf_zum_testen():
@@ -1282,9 +1334,9 @@ class GUI():
         #Buttons zum Bestätigen oder Abbrechen der Eingabe erstellen und platzieren
         button_frame = tk.Frame(popup_window)
         button_frame.pack(pady=(7,0))
-        okbutton = tk.Button(button_frame, text="Bestätigen", command=aufruf_zum_testen, height=2, width=15)
+        okbutton = tk.Button(button_frame,font=self.font, text="Bestätigen", command=aufruf_zum_testen, height=2, width=15)
         okbutton.pack(side=tk.LEFT)
-        cancelbutton = tk.Button(button_frame, text="Abbrechen", command = popup_window.destroy, height=2, width=15)
+        cancelbutton = tk.Button(button_frame,font=self.font, text="Abbrechen", command = popup_window.destroy, height=2, width=15)
         cancelbutton.pack(side=tk.LEFT)
 
         #Beim Enter drücken die Funktion zum Prüfen der Eingabeparameter aufrufen
@@ -1301,42 +1353,42 @@ class GUI():
     #Funktion zum Öffnen eines Pop Up Fensters zur Eingabe der Mess- und Protokollierungsparameter für eine Echtzeittemperaturmessung
     def live_graph_protokoll_popup(self):
         protokollierung = 1 #Protokollierung soll aktiviert werden
-        protokollierungsrate_var = tk.StringVar(value=5) #Variable für die Spinbox zum auswählen der Protokollierungsrate
-        darstellungsrate_var = tk.StringVar(value=5) #Variable für die Spinbox zum auswählen der Darstellungsrate
-        zeitraum_var = tk.StringVar(value=5) #Variable für die Spinbox zum auswählen des Zeitraums
+        self.protokollierungsrate_var = tk.IntVar(value=5) #Variable für die Spinbox zum auswählen der Protokollierungsrate
+        self.darstellungsrate_var = tk.IntVar(value=5) #Variable für die Spinbox zum auswählen der Darstellungsrate
+        self.zeitraum_var = tk.IntVar(value=5) #Variable für die Spinbox zum auswählen des Zeitraums
 
         popup_window = Toplevel(self.root) #Pop Up Fenster erzeugen
-        popup_window.geometry("675x320") #Größe des Pop Up Fensters festlegen
+        popup_window.geometry("675x400") #Größe des Pop Up Fensters festlegen
         #Positions des Hauptfensters abfragen
         x = self.root.winfo_x()
         y = self.root.winfo_y()
-        popup_window.geometry("+%d+%d" % (x + (self.root.winfo_width()-675)/2, y + (self.root.winfo_height()-320)/2)) #Position des Pop Up Fensters festlegen
+        popup_window.geometry("+%d+%d" % (x + (self.root.winfo_width()-675)/2, y + (self.root.winfo_height()-400)/2)) #Position des Pop Up Fensters festlegen
         # Keep the popup_window in front of the root window
         popup_window.wm_transient(self.root)
         popup_window.title("Einstellungen für Darstellung und Protokollierung") #Titel des Pop Up Fensters festlegen
 
         #Label und Spinbox für die Protokollierungsrate erstellen und platzieren
-        protokollierungsrate_label = tk.Label(popup_window, text="Protokollierungsrate in Sekunden zur Protokollierung von Messpunkten:",pady=10)
+        protokollierungsrate_label = tk.Label(popup_window,font=self.font, text="Protokollierungsrate in Sekunden zur Protokollierung von Messpunkten:",pady=10)
         protokollierungsrate_label.pack()
-        protokollierungsrate = tk.Spinbox(popup_window,bg="light yellow",width=30,from_=1,to=9999999999999999999999,textvariable=protokollierungsrate_var)
+        protokollierungsrate = ttk.Spinbox(popup_window,font=self.font,width=30,from_=1,to=9999999999999999999999,textvariable=self.protokollierungsrate_var)
         protokollierungsrate.pack()
         protokollierungsrate.focus()
         #Label und Spinbox für die Darstellungsrate erstellen und platzieren
-        darstellungsrate_label = tk.Label(popup_window, text="Darstellungsrate in Sekunden zur Darstellung von Messpunkten (Min. 4 Sek.):",pady=10)
+        darstellungsrate_label = tk.Label(popup_window,font=self.font, text="Darstellungsrate in Sekunden zur Darstellung von Messpunkten (Min. 4 Sek.):",pady=10)
         darstellungsrate_label.pack()
-        darstellungsrate = tk.Spinbox(popup_window,bg="light yellow",width=30,from_=self.min_darstellungsrate,to=9999999999999999999999,textvariable=darstellungsrate_var)
+        darstellungsrate = ttk.Spinbox(popup_window,font=self.font,width=30,from_=self.min_darstellungsrate,to=9999999999999999999999,textvariable=self.darstellungsrate_var)
         darstellungsrate.pack()
         #Label und Spinbox für den Zeitraum erstellen und platzieren
-        zeitraum_label = tk.Label(popup_window, text="Abzubildender Zeitraum in Minuten:", pady=10, padx=20)
+        zeitraum_label = tk.Label(popup_window,font=self.font, text="Abzubildender Zeitraum in Minuten:", pady=10, padx=20)
         zeitraum_label.pack()
-        zeitraum = tk.Spinbox(popup_window,bg="light yellow",width=30,from_=1,to=9999999999999999999999,textvariable=zeitraum_var)
+        zeitraum = ttk.Spinbox(popup_window,font=self.font,width=30,from_=1,to=9999999999999999999999,textvariable=self.zeitraum_var)
         zeitraum.pack()
         #Label und Eingabefeld für den Dateiname erstellen und platzieren
-        datei_label = tk.Label(popup_window, text="Name der Protokolldatei (Speicherort: {}/Saves):".format(self.Templogger.programm_pfad), pady=10,padx=20)
+        datei_label = tk.Label(popup_window,font=self.font, text="Name der Protokolldatei (Speicherort: {}/Saves):".format(self.Templogger.programm_pfad), pady=10,padx=20)
         datei_label.pack()
-        dateiname = tk.Entry(popup_window, width=40, bg="light yellow")
+        dateiname = tk.Entry(popup_window,font=self.font, width=40, bg="light yellow")
         dateiname.insert(tk.END,"<<Erster Zeitstempel>>")
-        dateiname.pack()
+        dateiname.pack(ipady=7)
 
         #Funktion zum aufrufen der Prüffunktion der Eingabeparameter
         def aufruf_zum_testen():
@@ -1345,9 +1397,9 @@ class GUI():
         #Buttons zum Bestätigen oder Abbrechen der Eingabe erstellen und platzieren
         button_frame = tk.Frame(popup_window)
         button_frame.pack(pady=(7,0))
-        okbutton = tk.Button(button_frame, text="Bestätigen", command=aufruf_zum_testen, height=2, width=15)
+        okbutton = tk.Button(button_frame,font=self.font, text="Bestätigen", command=aufruf_zum_testen, height=2, width=15)
         okbutton.pack(side=tk.LEFT)
-        cancelbutton = tk.Button(button_frame, text="Abbrechen", command = popup_window.destroy, height=2, width=15)
+        cancelbutton = tk.Button(button_frame,font=self.font, text="Abbrechen", command = popup_window.destroy, height=2, width=15)
         cancelbutton.pack(side=tk.LEFT)
 
         #Beim Enter drücken die Funktion zum Prüfen der Eingabeparameter aufrufen
@@ -1367,47 +1419,42 @@ class GUI():
         dateiname = None #Nur Darstellung daher wird kein Dateiname benötigt
         protokollierung = 0 #Nur Darstellung daher wird keine Protokollierungsrate benötigt
         protokollierungsrate = 0 #Nur Darstellung daher wird keine Protokollierungsrate benötigt
-        darstellungsrate_var = tk.StringVar(value=5)  #Variable für die Spinbox zum auswählen der Darstellungsrate
-        zeitraum_var = tk.StringVar(value=5) #Variable für die Spinbox zum auswählen des Zeitraums
-
-        #Hintergrundfarbe der Combobox ändern
-        style = ttk.Style()
-        style.theme_use('clam')
-        style.configure("TCombobox", fieldbackground= "light yellow")
+        self.darstellungsrate_var = tk.IntVar(value=5)  #Variable für die Spinbox zum auswählen der Darstellungsrate
+        self.zeitraum_var = tk.IntVar(value=5) #Variable für die Spinbox zum auswählen des Zeitraums
 
         popup_window = Toplevel(self.root) #Pop Up Fenster erzeugen
-        popup_window.geometry("580x320") #Größe des Pop Up Fensters festlegen
+        popup_window.geometry("630x390") #Größe des Pop Up Fensters festlegen
         #Positions des Hauptfensters abfragen
         x = self.root.winfo_x()
         y = self.root.winfo_y()
-        popup_window.geometry("+%d+%d" % (x + (self.root.winfo_width()-580)/2, y + (self.root.winfo_height()-320)/2)) #Position des Pop Up Fensters festlegen
+        popup_window.geometry("+%d+%d" % (x + (self.root.winfo_width()-630)/2, y + (self.root.winfo_height()-390)/2)) #Position des Pop Up Fensters festlegen
         # Keep the popup_window in front of the root window
         popup_window.wm_transient(self.root)
         popup_window.title("Einstellungen für die Darstellung") #Titel des Pop Up Fensters festlegen
         
         #Label und Spinbox für die Darstellungsrate erstellen und platzieren
-        darstellungsrate_label = tk.Label(popup_window, text="Darstellungsrate in Sekunden zur Darstellung von Messpunkten (Min. 4 Sek.):", pady=10, padx=20)
+        darstellungsrate_label = tk.Label(popup_window,font=self.font, text="Darstellungsrate in Sekunden zur Darstellung von Messpunkten (Min. 4 Sek.):", pady=10, padx=20)
         darstellungsrate_label.pack()
-        darstellungsrate = tk.Spinbox(popup_window,bg="light yellow",width=30,from_=self.min_darstellungsrate,to=9999999999999999999999,textvariable=darstellungsrate_var)
+        darstellungsrate = ttk.Spinbox(popup_window,font=self.font,width=30,from_=self.min_darstellungsrate,to=9999999999999999999999,textvariable=self.darstellungsrate_var)
         darstellungsrate.pack()
         darstellungsrate.focus()
         #Label und Spinbox für den Zeitraum erstellen und platzieren
-        zeitraum_label = tk.Label(popup_window, text="Abzubildender Zeitraum in Minuten:", pady=10, padx=20)
+        zeitraum_label = tk.Label(popup_window,font=self.font, text="Abzubildender Zeitraum in Minuten:", pady=10, padx=20)
         zeitraum_label.pack()
-        zeitraum = tk.Spinbox(popup_window,bg="light yellow",width=30,from_=1,to=9999999999999999999999,textvariable=zeitraum_var)
+        zeitraum = ttk.Spinbox(popup_window,font=self.font,width=30,from_=1,to=9999999999999999999999,textvariable=self.zeitraum_var)
         zeitraum.pack()
         #Label und Combobox zur Sensorauswahl erstellen und platzieren
-        sen1_label = tk.Label(popup_window, text="Ursprungssensor:", pady=10, padx=20)
+        sen1_label = tk.Label(popup_window,font=self.font, text="Ursprungssensor:", pady=10, padx=20)
         sen1_label.pack()
-        sen1 = ttk.Combobox(popup_window,values=self.sensorliste)
+        sen1 = ttk.Combobox(popup_window,font=self.font,values=self.sensorliste)
         sen1.set(1) #Als Standardwert der Combobox das erste Element auswählen
-        sen1.pack()
+        sen1.pack(ipady=5)
         #Label und Combobox zur Sensorauswahl erstellen und platzieren
-        sen2_label = tk.Label(popup_window, text="Abzuziehender Sensor:", pady=10, padx=20)
+        sen2_label = tk.Label(popup_window,font=self.font, text="Abzuziehender Sensor:", pady=10, padx=20)
         sen2_label.pack()
-        sen2 = ttk.Combobox(popup_window,values=self.sensorliste)
+        sen2 = ttk.Combobox(popup_window,font=self.font,values=self.sensorliste)
         sen2.set(2) #Als Standardwert der Combobox das zweite Element auswählen
-        sen2.pack()
+        sen2.pack(ipady=5)
 
         #Funktion zum aufrufen der Prüffunktion der Eingabeparameter
         def aufruf_zum_testen():
@@ -1416,9 +1463,9 @@ class GUI():
         #Buttons zum Bestätigen oder Abbrechen der Eingabe erstellen und platzieren
         button_frame = tk.Frame(popup_window)
         button_frame.pack(pady=(7,0))
-        okbutton = tk.Button(button_frame, text="Bestätigen", command=aufruf_zum_testen, height=2, width=15)
+        okbutton = tk.Button(button_frame,font=self.font, text="Bestätigen", command=aufruf_zum_testen, height=2, width=15)
         okbutton.pack(side=tk.LEFT)
-        cancelbutton = tk.Button(button_frame, text="Abbrechen", command = popup_window.destroy, height=2, width=15)
+        cancelbutton = tk.Button(button_frame,font=self.font, text="Abbrechen", command = popup_window.destroy, height=2, width=15)
         cancelbutton.pack(side=tk.LEFT)
         
         #Beim Enter drücken die Funktion zum Prüfen der Eingabeparameter aufrufen
@@ -1433,53 +1480,48 @@ class GUI():
     #Funktion zum Öffnen eines Pop Up Fensters zur Eingabe der Mess- und Protokollierungsparameter für eine Differenztemperaturmessung
     def differenz_graph_protokoll_static_popup(self):
         protokollierung = 1 #Protokollierung soll aktiviert werden
-        protokollierungs_darstellungs_rate_var = tk.StringVar(value=5) #Variable für die Spinbox zum auswählen der Darstellungs- und Protokollierungsrate
-        zeitraum_var = tk.StringVar(value=5) #Variable für die Spinbox zum auswählen des Zeitraums
-        
-        #Hintergrundfarbe der Combobox ändern
-        style = ttk.Style()
-        style.theme_use('clam')
-        style.configure("TCombobox", fieldbackground= "light yellow")
+        self.protokollierungsrate_var = tk.IntVar(value=5) #Variable für die Spinbox zum auswählen der Darstellungs- und Protokollierungsrate
+        self.zeitraum_var = tk.IntVar(value=5) #Variable für die Spinbox zum auswählen des Zeitraums
 
         popup_window = Toplevel(self.root) #Pop Up Fenster erzeugen
-        popup_window.geometry("590x380") #Größe des Pop Up Fensters festlegen
+        popup_window.geometry("675x465") #Größe des Pop Up Fensters festlegen
         #Positions des Hauptfensters abfragen
         x = self.root.winfo_x()
         y = self.root.winfo_y()
-        popup_window.geometry("+%d+%d" % (x + (self.root.winfo_width()-590)/2, y + (self.root.winfo_height()-380)/2)) #Position des Pop Up Fensters festlegen
+        popup_window.geometry("+%d+%d" % (x + (self.root.winfo_width()-675)/2, y + (self.root.winfo_height()-465)/2)) #Position des Pop Up Fensters festlegen
         # Keep the popup_window in front of the root window
         popup_window.wm_transient(self.root)
         popup_window.title("Einstellungen für Darstellung und Protokollierung") #Titel des Pop Up Fensters festlegen
 
         #Label und Spinbox für den Darstellungs- und Protokollierungsrate erstellen und platzieren
-        protokollierungs_darstellungs_rate_label = tk.Label(popup_window, text="Darstellungs- und Protokollierungsrate in Sekunden von Messdaten (Min. 4 Sek.):",pady=10, padx=20)
+        protokollierungs_darstellungs_rate_label = tk.Label(popup_window,font=self.font,text="Darstellungs- und Protokollierungsrate in Sekunden von Messdaten (Min. 4 Sek.):",pady=10, padx=20)
         protokollierungs_darstellungs_rate_label.pack()
-        protokollierungs_darstellungs_rate = tk.Spinbox(popup_window,bg="light yellow",width=30,from_=self.min_darstellungsrate,to=9999999999999999999999,textvariable=protokollierungs_darstellungs_rate_var)
+        protokollierungs_darstellungs_rate = ttk.Spinbox(popup_window,font=self.font,width=30,from_=self.min_darstellungsrate,to=9999999999999999999999,textvariable=self.protokollierungsrate_var)
         protokollierungs_darstellungs_rate.pack()
         protokollierungs_darstellungs_rate.focus()
         #Label und Spinbox für den Zeitraum erstellen und platzieren
-        zeitraum_label = tk.Label(popup_window, text="Abzubildender Zeitraum in Minuten:", pady=10, padx=20)
+        zeitraum_label = tk.Label(popup_window, font=self.font,text="Abzubildender Zeitraum in Minuten:", pady=10, padx=20)
         zeitraum_label.pack()
-        zeitraum = tk.Spinbox(popup_window,bg="light yellow",width=30,from_=1,to=9999999999999999999999,textvariable=zeitraum_var)
+        zeitraum = ttk.Spinbox(popup_window,width=30,font=self.font,from_=1,to=9999999999999999999999,textvariable=self.zeitraum_var)
         zeitraum.pack()
         #Label und Eingabefeld für den Dateiname erstellen und platzieren
-        dateiname_label = tk.Label(popup_window, text="Name der Protokolldatei (Speicherort: {}/Saves):".format(self.Templogger.programm_pfad), pady=10,padx=20)
+        dateiname_label = tk.Label(popup_window,font=self.font, text="Name der Protokolldatei (Speicherort: {}/Saves):".format(self.Templogger.programm_pfad), pady=10,padx=20)
         dateiname_label.pack()
-        dateiname = tk.Entry(popup_window, width=40, bg="light yellow")
+        dateiname = tk.Entry(popup_window, width=40,font=self.font, bg="light yellow")
         dateiname.insert(tk.END,"<<Erster Zeitstempel>>")
-        dateiname.pack()
+        dateiname.pack(ipady=7)
         #Label und Combobox zur Sensorauswahl erstellen und platzieren
-        sen1_label = tk.Label(popup_window, text="Ursprungssensor", pady=10, padx=20)
+        sen1_label = tk.Label(popup_window, text="Ursprungssensor",font=self.font, pady=10, padx=20)
         sen1_label.pack()
-        sen1 = ttk.Combobox(popup_window,values=self.sensorliste)
+        sen1 = ttk.Combobox(popup_window,values=self.sensorliste,font=self.font)
         sen1.set(1) #Als Standardwert der Combobox das erste Element auswählen
-        sen1.pack()
+        sen1.pack(ipady=5)
         #Label und Combobox zur Sensorauswahl erstellen und platzieren
-        sen2_label = tk.Label(popup_window, text="Abzuziehender Sensor", pady=10, padx=20)
+        sen2_label = tk.Label(popup_window,font=self.font, text="Abzuziehender Sensor", pady=10, padx=20)
         sen2_label.pack()
-        sen2 = ttk.Combobox(popup_window,values=self.sensorliste)
+        sen2 = ttk.Combobox(popup_window,values=self.sensorliste,font=self.font)
         sen2.set(2) #Als Standardwert der Combobox das zweite Element auswählen
-        sen2.pack()
+        sen2.pack(ipady=5)
 
         #Funktion zum aufrufen der Prüffunktion der Eingabeparameter
         def aufruf_zum_testen():
@@ -1488,9 +1530,9 @@ class GUI():
         #Buttons zum Bestätigen oder Abbrechen der Eingabe erstellen und platzieren
         button_frame = tk.Frame(popup_window)
         button_frame.pack(pady=(7,0))
-        okbutton = tk.Button(button_frame, text="Bestätigen", command=aufruf_zum_testen, height=2, width=15)
+        okbutton = tk.Button(button_frame, text="Bestätigen",font=self.font, command=aufruf_zum_testen, height=2, width=15)
         okbutton.pack(side=tk.LEFT)
-        cancelbutton = tk.Button(button_frame, text="Abbrechen", command = popup_window.destroy, height=2, width=15)
+        cancelbutton = tk.Button(button_frame,font=self.font, text="Abbrechen", command = popup_window.destroy, height=2, width=15)
         cancelbutton.pack(side=tk.LEFT)
 
         #Beim Enter drücken die Funktion zum Prüfen der Eingabeparameter aufrufen
@@ -1509,59 +1551,54 @@ class GUI():
     #Funktion zum Öffnen eines Pop Up Fensters zur Eingabe der Mess- und Protokollierungsparameter für eine Differenztemperaturmessung
     def differenz_graph_protokoll_popup(self):
         protokollierung = 1 #Protokollierung soll aktiviert werden
-        protokollierungsrate_var = tk.StringVar(value=5) #Variable für die Spinbox zum auswählen der Protokollierungsrate
-        darstellungsrate_var = tk.StringVar(value=5) #Variable für die Spinbox zum auswählen der Darstellungsrate
-        zeitraum_var = tk.StringVar(value=5) #Variable für die Spinbox zum auswählen des Zeitraums
-        
-        #Hintergrundfarbe der Combobox ändern
-        style = ttk.Style()
-        style.theme_use('clam')
-        style.configure("TCombobox", fieldbackground= "light yellow")
+        self.protokollierungsrate_var = tk.IntVar(value=5) #Variable für die Spinbox zum auswählen der Protokollierungsrate
+        self.darstellungsrate_var = tk.IntVar(value=5) #Variable für die Spinbox zum auswählen der Darstellungsrate
+        self.zeitraum_var = tk.IntVar(value=5) #Variable für die Spinbox zum auswählen des Zeitraums
 
         popup_window = Toplevel(self.root) #Pop Up Fenster erzeugen
-        popup_window.geometry("675x440") #Größe des Pop Up Fensters festlegen
+        popup_window.geometry("675x550") #Größe des Pop Up Fensters festlegen
         #Positions des Hauptfensters abfragen
         x = self.root.winfo_x()
         y = self.root.winfo_y()
-        popup_window.geometry("+%d+%d" % (x + (self.root.winfo_width()-675)/2, y + (self.root.winfo_height()-440)/2)) #Position des Pop Up Fensters festlegen
+        popup_window.geometry("+%d+%d" % (x + (self.root.winfo_width()-675)/2, y + (self.root.winfo_height()-550)/2)) #Position des Pop Up Fensters festlegen
         # Keep the popup_window in front of the root window
         popup_window.wm_transient(self.root)
         popup_window.title("Einstellungen für Darstellung und Protokollierung") #Titel des Pop Up Fensters festlegen
 
         #Label und Spinbox für die Protokollierungsrate erstellen und platzieren
-        protokollierungsrate_label = tk.Label(popup_window, text="Protokollierungsrate in Sekunden zur Protokollierung von Messpunkten:",pady=10, padx=20)
+        protokollierungsrate_label = tk.Label(popup_window,font=self.font, text="Protokollierungsrate in Sekunden zur Protokollierung von Messpunkten:",pady=10, padx=20)
         protokollierungsrate_label.pack()
-        protokollierungsrate = tk.Spinbox(popup_window,bg="light yellow",width=30,from_=1,to=9999999999999999999999,textvariable=protokollierungsrate_var)
+        protokollierungsrate = ttk.Spinbox(popup_window,font=self.font,width=30,from_=1,to=9999999999999999999999,textvariable=self.protokollierungsrate_var)
         protokollierungsrate.pack()
         protokollierungsrate.focus()
         #Label und Spinbox für die Darstellungsrate erstellen und platzieren
-        darstellungsrate_label = tk.Label(popup_window, text="Darstellungsrate in Sekunden zur Darstellung von Messpunkten (Min. 4 Sek.):", pady=10, padx=20)
+        darstellungsrate_label = tk.Label(popup_window,font=self.font, text="Darstellungsrate in Sekunden zur Darstellung von Messpunkten (Min. 4 Sek.):", pady=10, padx=20)
         darstellungsrate_label.pack()
-        darstellungsrate = tk.Spinbox(popup_window,bg="light yellow",width=30,from_=self.min_darstellungsrate,to=9999999999999999999999,textvariable=darstellungsrate_var)
+        darstellungsrate = ttk.Spinbox(popup_window,width=30,font=self.font,from_=self.min_darstellungsrate,to=9999999999999999999999,textvariable=self.darstellungsrate_var)
         darstellungsrate.pack()
         #Label und Spinbox für den Zeitraum erstellen und platzieren
-        zeitraum_label = tk.Label(popup_window, text="Abzubildender Zeitraum in Minuten:", pady=10, padx=20)
+        zeitraum_label = tk.Label(popup_window,font=self.font, text="Abzubildender Zeitraum in Minuten:", pady=10, padx=20)
         zeitraum_label.pack()
-        zeitraum = tk.Spinbox(popup_window,bg="light yellow",width=30,from_=1,to=9999999999999999999999,textvariable=zeitraum_var)
+        zeitraum = ttk.Spinbox(popup_window,width=30,font=self.font,from_=1,to=9999999999999999999999,textvariable=self.zeitraum_var)
         zeitraum.pack()
         #Label und Eingabefeld für den Dateiname erstellen und platzieren
-        dateiname_label = tk.Label(popup_window, text="Name der Protokolldatei (Speicherort: {}/Saves):".format(self.Templogger.programm_pfad), pady=10,padx=20)
+        dateiname_label = tk.Label(popup_window,font=self.font, text="Name der Protokolldatei (Speicherort: {}/Saves):".format(self.Templogger.programm_pfad), pady=10,padx=20)
         dateiname_label.pack()
-        dateiname = tk.Entry(popup_window, width=40, bg="light yellow")
+        dateiname = tk.Entry(popup_window, width=40, bg="light yellow",font=self.font)
         dateiname.insert(tk.END,"<<Erster Zeitstempel>>")
-        dateiname.pack()
+        dateiname.pack(ipady=7)
         #Label und Combobox zur Sensorauswahl erstellen und platzieren
-        sen1_label = tk.Label(popup_window, text="Ursprungssensor", pady=10, padx=20)
+        sen1_label = tk.Label(popup_window,font=self.font, text="Ursprungssensor", pady=10, padx=20)
         sen1_label.pack()
-        sen1 = ttk.Combobox(popup_window,values=self.sensorliste)
+        sen1 = ttk.Combobox(popup_window,values=self.sensorliste,font=self.font)
         sen1.set(1) #Als Standardwert der Combobox das erste Element auswählen
-        sen1.pack()
+        sen1.pack(ipady=5)
         #Label und Combobox zur Sensorauswahl erstellen und platzieren
-        sen2_label = tk.Label(popup_window, text="Abzuziehender Sensor", pady=10, padx=20)
+        sen2_label = tk.Label(popup_window,font=self.font, text="Abzuziehender Sensor", pady=10, padx=20)
         sen2_label.pack()
-        sen2 = ttk.Combobox(popup_window,values=self.sensorliste)
+        sen2 = ttk.Combobox(popup_window,values=self.sensorliste,font=self.font)
         sen2.set(2) #Als Standardwert der Combobox das zweite Element auswählen
-        sen2.pack()
+        sen2.pack(ipady=5)
 
         #Funktion zum aufrufen der Prüffunktion der Eingabeparameter
         def aufruf_zum_testen():
@@ -1570,9 +1607,9 @@ class GUI():
         #Buttons zum Bestätigen oder Abbrechen der Eingabe erstellen und platzieren
         button_frame = tk.Frame(popup_window)
         button_frame.pack(pady=(7,0))
-        okbutton = tk.Button(button_frame, text="Bestätigen", command=aufruf_zum_testen, height=2, width=15)
+        okbutton = tk.Button(button_frame,font=self.font, text="Bestätigen", command=aufruf_zum_testen, height=2, width=15)
         okbutton.pack(side=tk.LEFT)
-        cancelbutton = tk.Button(button_frame, text="Abbrechen", command = popup_window.destroy, height=2, width=15)
+        cancelbutton = tk.Button(button_frame,font=self.font, text="Abbrechen", command = popup_window.destroy, height=2, width=15)
         cancelbutton.pack(side=tk.LEFT)
 
         #Beim Enter drücken die Funktion zum Prüfen der Eingabeparameter aufrufen
@@ -1591,17 +1628,12 @@ class GUI():
 
     #Funktion zum Öffnen eines Pop Up Fensters zur Eingabe von Parametern zum Laden und darstellen einer Protokolldatei
     def protokoll_daten_popup(self):
-        #Hintergrundfarbe der Combobox ändern
-        style = ttk.Style()
-        style.theme_use('clam')
-        style.configure("TCombobox", fieldbackground= "light yellow")
-
         popup_window = Toplevel(self.root) #Pop Up Fenster erzeugen
-        popup_window.geometry("450x150") #Größe des Pop Up Fensters festlegen
+        popup_window.geometry("480x150") #Größe des Pop Up Fensters festlegen
         #Positions des Hauptfensters abfragen
         x = self.root.winfo_x()
         y = self.root.winfo_y()
-        popup_window.geometry("+%d+%d" % (x + (self.root.winfo_width()-450)/2, y + (self.root.winfo_height()-150)/2)) #Position des Pop Up Fensters festlegen
+        popup_window.geometry("+%d+%d" % (x + (self.root.winfo_width()-480)/2, y + (self.root.winfo_height()-150)/2)) #Position des Pop Up Fensters festlegen
         popup_window.wm_transient(self.root)
         popup_window.title("Protokolldaten laden") #Titel des Pop Up Fensters festlegen
 
@@ -1609,17 +1641,17 @@ class GUI():
         datei_liste.sort()
         combo_box_liste = datei_liste[:] #Ermittelte Liste der Dateinamen kopieren
         #Label für die Beschriftung der Dateiname eingabe erstellen und platzieren
-        dateilabel = tk.Label(popup_window, text="Dateipfad und Name der .csv Datei:", pady=10, padx=20)
+        dateilabel = tk.Label(popup_window,font=self.font, text="Dateipfad und Name der .csv Datei:", pady=10, padx=20)
         dateilabel.pack()
         #Erstellen und platzieren eines Frames zur anordnung der Combobox und des Durchsuchen Buttons
         dateipfad_frame = tk.Frame(popup_window)
         dateipfad_frame.pack()
         #Combobox erstellen und platzieren mit der Liste der ermittelten Dateien im /Saves Ordner
-        dateipfad = ttk.Combobox(dateipfad_frame,values=combo_box_liste,width=40)
-        dateipfad.pack(side=tk.LEFT)
+        dateipfad = ttk.Combobox(dateipfad_frame,font=self.font,values=combo_box_liste,width=40)
+        dateipfad.pack(side=tk.LEFT,ipady=5)
         #Button erstellen und platzieren zum suchen einer Datei an einem anderen Ort und zum hinzufügen in die Liste der Combobox
-        datei_auswaehlen = tk.Button(dateipfad_frame,text="...",width=1,height=1,command=lambda: self.datei_oeffnen(combo_box_liste,dateipfad))
-        datei_auswaehlen.pack(side=tk.LEFT)
+        datei_auswaehlen = tk.Button(dateipfad_frame,font=self.font,text="...",width=1,height=1,command=lambda: self.datei_oeffnen(combo_box_liste,dateipfad))
+        datei_auswaehlen.pack(side=tk.LEFT,ipady=5)
 
         def aufruf():
             pfad = None
@@ -1631,9 +1663,9 @@ class GUI():
 
         button_frame = tk.Frame(popup_window)
         button_frame.pack(pady=(7,0))
-        okbutton = tk.Button(button_frame, text="Bestätigen", command=aufruf,height=2, width=15)
+        okbutton = tk.Button(button_frame,font=self.font, text="Bestätigen", command=aufruf,height=2, width=15)
         okbutton.pack(side=tk.LEFT)
-        cancelbutton = tk.Button(button_frame, text="Abbrechen", command=popup_window.destroy, height=2, width=15)
+        cancelbutton = tk.Button(button_frame,font=self.font, text="Abbrechen", command=popup_window.destroy, height=2, width=15)
         cancelbutton.pack(side=tk.LEFT)
         
         #Beim Enter drücken die Funktion zum Prüfen der Eingabeparameter aufrufen
@@ -1644,17 +1676,12 @@ class GUI():
 
     #Funktion zum Öffnen eines Pop Up Fensters zur Eingabe von Parametern zum Laden einer Protokolldatei und dem bilden eines Differenztemperaturgraphen
     def Protokolldaten_differenz_popup(self):
-        #Hintergrundfarbe der Combobox ändern
-        style = ttk.Style()
-        style.theme_use('clam')
-        style.configure("TCombobox", fieldbackground= "light yellow")
-
         popup_window = Toplevel(self.root) #Pop Up Fenster erzeugen
-        popup_window.geometry("450x260") #Größe des Pop Up Fensters festlegen
+        popup_window.geometry("480x310") #Größe des Pop Up Fensters festlegen
         #Positions des Hauptfensters abfragen
         x = self.root.winfo_x()
         y = self.root.winfo_y()
-        popup_window.geometry("+%d+%d" % (x + (self.root.winfo_width()-450)/2, y + (self.root.winfo_height()-260)/2)) #Position des Pop Up Fensters festlegen
+        popup_window.geometry("+%d+%d" % (x + (self.root.winfo_width()-480)/2, y + (self.root.winfo_height()-310)/2)) #Position des Pop Up Fensters festlegen
         popup_window.wm_transient(self.root)
         popup_window.title("Protokolldaten laden") #Titel des Pop Up Fensters festlegen
     
@@ -1662,31 +1689,31 @@ class GUI():
         datei_liste.sort()
         combo_box_liste = datei_liste[:] #Ermittelte Liste der Dateinamen kopieren
         #Label für die Beschriftung der Dateiname eingabe erstellen und platzieren
-        dateipfad_label = tk.Label(popup_window, text="Dateipfad und Name der .csv Datei:", pady=10, padx=20)
+        dateipfad_label = tk.Label(popup_window,font=self.font, text="Dateipfad und Name der .csv Datei:", pady=10, padx=20)
         dateipfad_label.pack()
         #Erstellen und platzieren eines Frames zur anordnung der Combobox und des Durchsuchen Buttons
         dateipfad_frame = tk.Frame(popup_window)
         dateipfad_frame.pack()
         #Combobox erstellen und platzieren mit der Liste der ermittelten Dateien im /Saves Ordner
-        dateipfad = ttk.Combobox(dateipfad_frame,values=combo_box_liste,width=40)
-        dateipfad.pack(side=tk.LEFT)
+        dateipfad = ttk.Combobox(dateipfad_frame,font=self.font,values=combo_box_liste,width=40)
+        dateipfad.pack(side=tk.LEFT,ipady=5)
         #Button erstellen und platzieren zum suchen einer Datei an einem anderen Ort und zum hinzufügen in die Liste der Combobox
-        datei_auswaehlen = tk.Button(dateipfad_frame,text="...",width=1,height=1,command=lambda: self.datei_oeffnen(combo_box_liste,dateipfad))
-        datei_auswaehlen.pack(side=tk.LEFT)
+        datei_auswaehlen = tk.Button(dateipfad_frame,font=self.font,text="...",width=1,height=1,command=lambda: self.datei_oeffnen(combo_box_liste,dateipfad))
+        datei_auswaehlen.pack(side=tk.LEFT,ipady=5)
         #Erstellen und platzieren eines Labels zur Beschriftung
-        sen1_label = tk.Label(popup_window, text="Ursprungssensor:", pady=10, padx=20)
+        sen1_label = tk.Label(popup_window,font=self.font, text="Ursprungssensor:", pady=10, padx=20)
         sen1_label.pack()
         sensorliste = [1,2,3,4]
         #Combobox erstellen und platzieren zur Auswahl der Sensornummer
-        sen1 = tk.ttk.Combobox(popup_window,values=sensorliste)
-        sen1.pack()
+        sen1 = tk.ttk.Combobox(popup_window,font=self.font,values=sensorliste)
+        sen1.pack(ipady=5)
         sen1.set(1) #Als Standart das erste Element ausgewählt
         #Erstellen und platzieren eines Labels zur Beschriftung
-        sen2_label = tk.Label(popup_window, text="Abzuziehende Sensor:", pady=10, padx=20)
+        sen2_label = tk.Label(popup_window,font=self.font, text="Abzuziehende Sensor:", pady=10, padx=20)
         sen2_label.pack()
         #Combobox erstellen und platzieren zur Auswahl der Sensornummer
-        sen2 = tk.ttk.Combobox(popup_window,values=sensorliste)
-        sen2.pack()
+        sen2 = tk.ttk.Combobox(popup_window,font=self.font,values=sensorliste)
+        sen2.pack(ipady=5)
         sen2.set(2) #Als Standart das zweite Element ausgewählt
 
         def aufruf():
@@ -1699,9 +1726,9 @@ class GUI():
 
         button_frame = tk.Frame(popup_window)
         button_frame.pack(pady=(7,0))
-        okbutton = tk.Button(button_frame, text="Bestätigen", command=aufruf, height=2, width=15)
+        okbutton = tk.Button(button_frame,font=self.font, text="Bestätigen", command=aufruf, height=2, width=15)
         okbutton.pack(side=tk.LEFT)
-        cancelbutton = tk.Button(button_frame, text="Abbrechen", command=popup_window.destroy, height=2, width=15)
+        cancelbutton = tk.Button(button_frame,font=self.font, text="Abbrechen", command=popup_window.destroy, height=2, width=15)
         cancelbutton.pack(side=tk.LEFT)
     
         #Beim Enter drücken die Funktion zum Prüfen der Eingabeparameter aufrufen
@@ -1792,6 +1819,14 @@ class GUI():
         treeview.column("Differenz", minwidth=306,width=102,stretch=1)
         #schreibe die Protokolldaten in den Treeview
         for zeile in daten:
+            if zeile[0][0:16] == "Temperaturlogger":
+                treeview.insert("", tk.END, values=[zeile[0]])
+                continue #Führe die For Schleife mit dem nächsten Listenelement fort
+            if zeile[0] == "Messung wurd pausiert":
+                try:
+                    treeview.insert("", tk.END, values=[zeile[0],zeile[1]])
+                    continue
+                except: None
             treeview.insert("", tk.END, values=[zeile[0],str(round(float(zeile[sen1].replace(",",".")) - float(zeile[sen2].replace(",",".")),3)).replace(".",",")])
         #Weise den Scollbars die Steuerung des Treeview zu
         scrollbar_v.config(command=treeview.yview)
@@ -1867,6 +1902,16 @@ class GUI():
                         if zeile[0][0:25] == "Differenztemperaturlogger" or zeile[0][0:16] == "Temperaturlogger":
                             header = True #setze die Flag zum markieren das die nächste Zeile die 2. Headerzeile ist
                             continue #Führe die For Schleife mit dem nächsten Listenelement fort
+                        if zeile[0] == "Messung wurd pausiert":
+                            try:
+                                datumlist = np.append(datumlist,datetime.datetime.strptime(zeile[1],"%Y.%m.%d %H:%M:%S"))
+                                sensor1list = np.append(sensor1list,None)
+                                if not differenz_log:
+                                    sensor2list = np.append(sensor2list,None)
+                                    sensor3list = np.append(sensor3list,None)
+                                    sensor4list = np.append(sensor4list,None)
+                                continue
+                            except: None
                         fehler_flag = True #Wenn die Zeile mit etwas anderem startet, dann setze die Flag zum markieren, das es ein Fehler gab
                         continue #Führe die For Schleife mit dem nächsten Listenelement fort
                 #Versuche den Temperaturwert der Liste hinzuzufügen
@@ -1988,9 +2033,11 @@ class GUI():
                 toolbar._Button("Sensor 2",None,None,lambda:change_graph(1))
                 toolbar._Button("Sensor 3",None,None,lambda:change_graph(2))
                 toolbar._Button("Sensor 4",None,None,lambda:change_graph(3))
+                toolbar._Button("Daten anzeigen",None,None,lambda: self.show_protokoll_data(daten,dateiname,differenz_log,sen1,sen2,kalibriert))
 
         #Wenn es ein Fehler beim lesen oder darstellen des Protokolls gab, dann gebe eine Fehlermeldung aus und schließe das Fenster für den Graph
         except Exception:
+            print(traceback.format_exc())
             messagebox.showerror(parent=popup_window,title = "Fehler beim darstellen", message = "Es trat ein Fehler beim darstellen des Protokolls auf.")
             popup_window.destroy()
             return
@@ -2064,6 +2111,12 @@ class GUI():
                         if zeile[0][0:16] == "Temperaturlogger":
                             header = True #setze die Flag zum markieren das die nächste Zeile die 2. Headerzeile ist
                             continue #Führe die For Schleife mit dem nächsten Listenelement fort
+                        if zeile[0] == "Messung wurd pausiert":
+                            try:
+                                datumlist = np.append(datumlist,datetime.datetime.strptime(zeile[1],"%Y.%m.%d %H:%M:%S"))
+                                differenzliste = np.append(differenzliste,None)
+                                continue
+                            except: None
                         fehler_flag = True #Wenn die Zeile mit etwas anderem startet, dann setze die Flag zum markieren, das es ein Fehler gab
                         continue #Führe die For Schleife mit dem nächsten Listenelement fort
                 #Versuche den Temperaturwert der Liste hinzuzufügen
@@ -2338,7 +2391,10 @@ class Graph(tk.Frame):
         #Wenn der Thread für die Darstellung beendet werden soll, dann verlasse die Funktion
         if self.Templogger.stop_all_threads.is_set(): return
         #Stelle den neu gezeichneten Graphen dar
-        self.canvas.draw()
+        try:
+            self.canvas.draw()
+        except:
+            print("fehler beim zeichnen")
 
 #Wenn diese Datei als Programm aufgerufen und nicht als Modul importiert wird, dann...
 if __name__ == "__main__":

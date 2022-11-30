@@ -60,20 +60,20 @@ class Kalibrierung():
     #Funktion zum erstellen des Fensters zur 0 Grad Kalibrierungs
     def kalibrieren_0_popup(self):
         popup_window = Toplevel(self.GUI.root) #Pop Up Fenster erzeugen
-        popup_window.geometry("350x125") #Größe des Pop Up Fensters festlegen
+        popup_window.geometry("370x150") #Größe des Pop Up Fensters festlegen
         #Positions des Hauptfensters abfragen
         x = self.GUI.root.winfo_x()
         y = self.GUI.root.winfo_y()
-        popup_window.geometry("+%d+%d" % (x + (self.GUI.root.winfo_width()-350)/2, y + (self.GUI.root.winfo_height()-125)/2)) #Position des Pop Up Fensters festlegen
+        popup_window.geometry("+%d+%d" % (x + (self.GUI.root.winfo_width()-370)/2, y + (self.GUI.root.winfo_height()-150)/2)) #Position des Pop Up Fensters festlegen
         popup_window.wm_transient(self.GUI.root)
         popup_window.title("Kalibrieren für 0°C") #Titel des Pop Up Fensters festlegen
 
         #Label für die Beschriftung erstellen und platzieren
-        beschreibungs_label = tk.Label(popup_window, text="Referenztemperatur [°C]:", pady=10)
+        beschreibungs_label = tk.Label(popup_window,font=self.GUI.font, text="Referenztemperatur [°C]:", pady=10)
         beschreibungs_label.pack()
         #Eingabefeld für die Referenztemperatur erstellen und platzieren
-        referenz_temp = tk.Entry(popup_window, width=30, bg="light yellow")
-        referenz_temp.pack()
+        referenz_temp = tk.Entry(popup_window,font=self.GUI.font, width=30, bg="light yellow")
+        referenz_temp.pack(ipady=7)
 
         #Funktion zum aufrufen der Funktion um die Eingabe zu prüfen
         def aufruf_zum_testen():
@@ -82,9 +82,9 @@ class Kalibrierung():
         #Buttons zum Bestätigen oder Abbrechen der Eingabe erstellen und platzieren
         button_frame = tk.Frame(popup_window,pady=5)
         button_frame.pack()
-        okbutton = tk.Button(button_frame, text="0°C kalibrieren", command=aufruf_zum_testen,height=2,width=15)
+        okbutton = tk.Button(button_frame,font=self.GUI.font, text="0°C kalibrieren", command=aufruf_zum_testen,height=2,width=15)
         okbutton.pack(side=tk.LEFT)
-        cancelbutton = tk.Button(button_frame, text="Abbrechen", command=lambda: self.kalibrierung_abbrechen(popup_window), height=2, width=15)
+        cancelbutton = tk.Button(button_frame,font=self.GUI.font, text="Abbrechen", command=lambda: self.kalibrierung_abbrechen(popup_window), height=2, width=15)
         cancelbutton.pack(side=tk.LEFT)
 
         #Beim Enter drücken die Funktion zum Prüfen der Eingabeparameter aufrufen
@@ -99,20 +99,20 @@ class Kalibrierung():
     #Funktion zum erstellen des Fensters zur 100 Grad Kalibrierungs
     def kalibrieren_100_popup(self):
         popup_window = Toplevel(self.GUI.root) #Pop Up Fenster erzeugen
-        popup_window.geometry("350x125") #Größe des Pop Up Fensters festlegen
+        popup_window.geometry("370x150") #Größe des Pop Up Fensters festlegen
         #Positions des Hauptfensters abfragen
         x = self.GUI.root.winfo_x()
         y = self.GUI.root.winfo_y()
-        popup_window.geometry("+%d+%d" % (x + (self.GUI.root.winfo_width()-350)/2, y + (self.GUI.root.winfo_height()-125)/2)) #Position des Pop Up Fensters festlegen
+        popup_window.geometry("+%d+%d" % (x + (self.GUI.root.winfo_width()-370)/2, y + (self.GUI.root.winfo_height()-150)/2)) #Position des Pop Up Fensters festlegen
         popup_window.wm_transient(self.GUI.root)
         popup_window.title("Kalibrieren für 100°C") #Titel des Pop Up Fensters festlegen
 
         #Label für die Beschriftung erstellen und platzieren
-        beschreibungs_label = tk.Label(popup_window, text="Referenztemperatur [°C]:", pady=10)
+        beschreibungs_label = tk.Label(popup_window,font=self.GUI.font, text="Referenztemperatur [°C]:", pady=10)
         beschreibungs_label.pack()
         #Eingabefeld für die Referenztemperatur erstellen und platzieren
-        referenz_temp = tk.Entry(popup_window, width=30, bg="light yellow")
-        referenz_temp.pack()
+        referenz_temp = tk.Entry(popup_window,font=self.GUI.font, width=30, bg="light yellow")
+        referenz_temp.pack(ipady=7)
         
         #Funktion zum aufrufen der Funktion um die Eingabe zu prüfen
         def aufruf_zum_testen():
@@ -121,9 +121,9 @@ class Kalibrierung():
         #Buttons zum Bestätigen oder Abbrechen der Eingabe erstellen und platzieren
         button_frame = tk.Frame(popup_window,pady=5)
         button_frame.pack()
-        okbutton = tk.Button(button_frame, text="100°C kalibrieren", command=aufruf_zum_testen,height=2,width=15)
+        okbutton = tk.Button(button_frame,font=self.GUI.font, text="100°C kalibrieren", command=aufruf_zum_testen,height=2,width=15)
         okbutton.pack(side=tk.LEFT)
-        cancelbutton = tk.Button(button_frame, text="Abbrechen", command=lambda: self.kalibrierung_abbrechen(popup_window), height=2, width=15)
+        cancelbutton = tk.Button(button_frame,font=self.GUI.font, text="Abbrechen", command=lambda: self.kalibrierung_abbrechen(popup_window), height=2, width=15)
         cancelbutton.pack(side=tk.LEFT)
 
         #Beim Enter drücken die Funktion zum Prüfen der Eingabeparameter aufrufen

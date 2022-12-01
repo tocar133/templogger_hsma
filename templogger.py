@@ -2399,7 +2399,7 @@ class Graph(tk.Frame):
 #Wenn diese Datei als Programm aufgerufen und nicht als Modul importiert wird, dann...
 if __name__ == "__main__":
     DEBUG = False #Deaktiviert den Debug Betriebsmodus
-    DEBUG = True #nur für die Entwicklungszeit, danach entfernen
+    #DEBUG = True #nur für die Entwicklungszeit, danach entfernen
     #Wenn das Programm mit dem Argument DEBUG aufgerufen wird, dann...
     if "DEBUG" in sys.argv[1:]:
         DEBUG = True #Aktiviere den Debug Betriebsmodus

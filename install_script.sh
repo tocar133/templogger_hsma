@@ -4,6 +4,8 @@ user=$(logname)
 script_pfad=$(realpath -s "$0")
 script_ordner_pfad=$(dirname "$script_pfad")
 
+declare -i fehler=0
+
 echo "########################################################################"
 echo "Desktop Shortcut erstellen"
 if test -f "/home/$user/Desktop/Templogger.desktop"; then
@@ -22,6 +24,7 @@ X-KeepTerminal=true" >> "/home/$user/Desktop/Templogger.desktop"
         echo "Desktop Shortcut wurde erstellt"
     else
         echo "Desktop Shortcut wurde nicht erstellt"
+        fehler=$(( fehler + 1 ))
     fi
 fi
 #read a
@@ -43,6 +46,7 @@ else
         echo "Templogger Autostart wurde eingerichtet"
     else
         echo "Templogger Autostart wurde nicht eingerichtet"
+        fehler=$(( fehler + 1 ))
     fi
 fi
 #read a
@@ -65,6 +69,7 @@ else
         echo "Tastaturlayout wurde kopiert"
     else
         echo "Tastaturlayout wurde nicht kopiert"
+        fehler=$(( fehler + 1 ))
     fi
 fi
 #read a
@@ -76,6 +81,7 @@ if [ $? -eq 0 ]; then
     echo "system wurde geupdatet"
 else
     echo "system wurde nicht geupdatet"
+    fehler=$(( fehler + 1 ))
 fi
 #read a
 
@@ -86,6 +92,7 @@ if [ $? -eq 0 ]; then
     echo "system wurde geupgradet"
 else
     echo "system wurde nicht geupgradet"
+    fehler=$(( fehler + 1 ))
 fi
 #read a
 
@@ -96,6 +103,7 @@ if [ $? -eq 0 ]; then
     echo "matplotlib wurde installiert"
 else
     echo "matplotlib wurde nicht installiert"
+    fehler=$(( fehler + 1 ))
 fi
 #read a
 
@@ -106,6 +114,7 @@ if [ $? -eq 0 ]; then
     echo "numpy wurde geupgradet"
 else
     echo "numpy wurde nicht geupgradet"
+    fehler=$(( fehler + 1 ))
 fi
 #read a
 
@@ -116,6 +125,7 @@ if [ $? -eq 0 ]; then
     echo "libatlas-base-dev wurde installiert"
 else
     echo "libatlas-base-dev wurde nicht installiert"
+    fehler=$(( fehler + 1 ))
 fi
 #read a
 
@@ -126,6 +136,7 @@ if [ $? -eq 0 ]; then
     echo "python3-pil.imagetk wurde installiert"
 else
     echo "python3-pil.imagetk wurde nicht installiert"
+    fehler=$(( fehler + 1 ))
 fi
 #read a
 
@@ -136,6 +147,7 @@ if [ $? -eq 0 ]; then
     echo "adafruit_blinka wurde installiert"
 else
     echo "adafruit_blinka wurde nicht installiert"
+    fehler=$(( fehler + 1 ))
 fi
 #read a
 
@@ -146,6 +158,7 @@ if [ $? -eq 0 ]; then
     echo "adafruit-circuitpython-max31865 wurde installiert"
 else
     echo "adafruit-circuitpython-max31865 wurde nicht installiert"
+    fehler=$(( fehler + 1 ))
 fi
 #read a
 
@@ -156,6 +169,7 @@ if [ $? -eq 0 ]; then
     echo "adafruit-extended-bus wurde installiert"
 else
     echo "adafruit-extended-bus wurde nicht installiert"
+    fehler=$(( fehler + 1 ))
 fi
 #read a
 
@@ -166,6 +180,7 @@ if [ $? -eq 0 ]; then
     echo "keyboard wurde installiert"
 else
     echo "keyboard wurde nicht installiert"
+    fehler=$(( fehler + 1 ))
 fi
 #read a
 
@@ -176,6 +191,7 @@ if [ $? -eq 0 ]; then
     echo "x11vnc wurde installiert"
 else
     echo "x11vnc wurde nicht installiert"
+    fehler=$(( fehler + 1 ))
 fi
 #read a
 
@@ -197,6 +213,7 @@ else
         echo "x11vnc passwort wurde gesetzt"
     else
         echo "x11vnc passwort wurde nicht gesetzt"
+        fehler=$(( fehler + 1 ))
     fi
 fi
 #read a
@@ -216,6 +233,7 @@ StartupNotify=false" >> "/home/$user/.config/autostart/x11vnc.desktop"
         echo "Remote Desktop Services Autostart wurde eingerichtet"
     else
         echo "Remote Desktop Services Autostart wurde nicht eingerichtet"
+        fehler=$(( fehler + 1 ))
     fi
 fi
 #read a
@@ -227,6 +245,18 @@ if [ $? -eq 0 ]; then
     echo "SPI wurde eingeschaltet"
 else
     echo "SPI wurde nicht eingeschaltet"
+    fehler=$(( fehler + 1 ))
+fi
+#read a
+
+echo "########################################################################"
+echo "SSH einschalten"
+sudo touch /boot/ssh
+if [ $? -eq 0 ]; then
+    echo "SSH wurde eingeschaltet"
+else
+    echo "SSH wurde nicht eingeschaltet"
+    fehler=$(( fehler + 1 ))
 fi
 #read a
 
@@ -237,6 +267,7 @@ if [ $? -eq 0 ]; then
     echo "SSH Port wurde geaendert"
 else
     echo "SSH Port wurde nicht geaendert"
+    fehler=$(( fehler + 1 ))
 fi
 #read a
 
@@ -250,6 +281,7 @@ if [ $? -eq 0 ]; then
     echo "Konfiguration für Display erfolgreich"
 else
     echo "Konfiguration für Display nicht erfolgreich"
+    fehler=$(( fehler + 1 ))
 fi
 #read a
 
@@ -266,17 +298,25 @@ if [ $? -eq 0 ]; then
         echo "Helligkeitstool wurde installiert"
     else
         echo "Helligkeitstool wurde nicht installiert"
+        fehler=$(( fehler + 1 ))
     fi
 else
     echo "Herunterladen des Helligkeitstool fehlgeschlagen"
+    fehler=$(( fehler + 1 ))
 fi
 cd "$script_ordner_pfad"
 #read a
 
 
 echo "########################################################################"
-echo "Fertig, bitte druecke Sie Enter zum neustarten"
+echo "Fertig"
+if [ $fehler -gt 0 ]; then
+    echo "Bei $fehler Installationsschritten traten Fehler auf"
+fi
+echo "Wollen Sie das Gerät jetzt neustarten? (y/n)"
 echo "########################################################################"
-read a
 
-reboot
+read eingabe
+if [ $eingabe = "y" ]; then
+    reboot
+fi

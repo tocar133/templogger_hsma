@@ -30,14 +30,24 @@ class Kalibrierung():
         #Wenn die ersten Kalibrierungswerte noch nicht vonhanden sind, dann...
         if self.temps0 == None:
             popup_window.destroy() #Schlieﬂe das Eingabefenster
-            self.Templogger.messung() #Ermittel die aktuellen Messwerte der Sensoren
-            self.temps0 = [temp_ref,self.Templogger.temp_sen1,self.Templogger.temp_sen2,self.Templogger.temp_sen3,self.Templogger.temp_sen4] #Speichere die Daten zwischen
+
+            temp1 = round(self.Templogger.sensor1.temperature,3)
+            temp2 = round(self.Templogger.sensor2.temperature,3)
+            temp3 = round(self.Templogger.sensor3.temperature,3)
+            temp4 = round(self.Templogger.sensor4.temperature,3)
+
+            self.temps0 = [temp_ref,temp1,temp2,temp3,temp4] #Speichere die Daten zwischen
             self.kalibrieren_100_popup() #Rufe das Fenster zur 100 Grad Kalibrierung auf
         #Wenn die zweiten Kalibrierungswerte noch nicht vonhanden sind, dann...
         elif self.temps100 == None:
             popup_window.destroy() #Schlieﬂe das Eingabefenster
-            self.Templogger.messung() #Ermittel die aktuellen Messwerte der Sensoren
-            self.temps100 = [temp_ref,self.Templogger.temp_sen1,self.Templogger.temp_sen2,self.Templogger.temp_sen3,self.Templogger.temp_sen4] #Speichere die Daten zwischen
+
+            temp1 = round(self.Templogger.sensor1.temperature,3)
+            temp2 = round(self.Templogger.sensor2.temperature,3)
+            temp3 = round(self.Templogger.sensor3.temperature,3)
+            temp4 = round(self.Templogger.sensor4.temperature,3)
+
+            self.temps100 = [temp_ref,temp1,temp2,temp3,temp4] #Speichere die Daten zwischen
             #Rufe die Funktion zur Speicherung der Daten in die Kalibrierungsdatei auf
             self.kalibrierung_speichern()
 

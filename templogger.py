@@ -448,12 +448,12 @@ class Templog():
                     if sen2 == None:
                         #Schreibe die Beschreibung der Echtzeitmessung in die ersten 2 Zeilen der Protokolldatei
                         schreiber.writerow(["Temperaturlogger{} wurde am {} um {} gestartet.".format(kalibrierung,start.strftime("%d.%m.%Y"),start.strftime("%H:%M:%S"))])
-                        schreiber.writerow(["Zeitstempel","Sensor 1","Sensor 2","Sensor 3","Sensor 4"])
+                        schreiber.writerow(["Zeitstempel","Sensor 1 [°C]","Sensor 2 [°C]","Sensor 3 [°C]","Sensor 4 [°C]"])
                     #Wenn es eine Differenzmessung ist, dann...
                     else:
                         #Schreibe die Beschreibung der Differenzmessung in die ersten 2 Zeilen der Protokolldatei
                         schreiber.writerow(["Differenztemperaturlogger{} wurde am {} um {} gestartet.".format(kalibrierung,start.strftime("%d.%m.%Y"),start.strftime("%H:%M:%S"))])
-                        schreiber.writerow(["Zeitstempel","Sensor {} - Sensor {}".format(sen1,sen2)])
+                        schreiber.writerow(["Zeitstempel","Sensor {} - Sensor {} [°C]".format(sen1,sen2)])
                 header_geschrieben = True #Flag setzten zur Markierung, dass der Header geschrieben wurde
                 #Schreibe den Datensatz in die Protokolldatei
                 schreiber.writerow(datensatz)
@@ -681,9 +681,9 @@ class GUI():
         self.options.add_command(label="Beenden",font = ("", 15), command=self.close) #Untermenüpunkt zum beenden des Programms
 
         #Menüpunkte zur Menüleiste hinzufügen und den Name der Menüpunkte festlegen
-        self.menubar.add_cascade(label='Temperaturgraphen', menu=self.liveGraphsMenu,font = ("", 15))
-        self.menubar.add_cascade(label='Differenztempertaturgraphen', menu=self.differenzGraphsMenu,font = ("", 15))
-        self.menubar.add_cascade(label='Existierende Dateien laden', menu=self.loadGraphs,font = ("", 15))
+        self.menubar.add_cascade(label='Temperaturgraphen         ', menu=self.liveGraphsMenu,font = ("", 15))
+        self.menubar.add_cascade(label='Differenztemperaturgraphen         ', menu=self.differenzGraphsMenu,font = ("", 15))
+        self.menubar.add_cascade(label='Existierende Dateien laden         ', menu=self.loadGraphs,font = ("", 15))
         self.menubar.add_cascade(label='Weitere Optionen', menu=self.options,font = ("", 15))
 
         if platform.system() != "Linux":
@@ -770,6 +770,15 @@ class GUI():
             self.sensoren_pruefen.config(state=tk.DISABLED)
         else:
             self.check_sensoren()
+
+            if self.sensor1_checkbox["state"] == tk.NORMAL:
+                self.sensorvar1.set(True)
+            if self.sensor2_checkbox["state"] == tk.NORMAL:
+                self.sensorvar2.set(True)
+            if self.sensor3_checkbox["state"] == tk.NORMAL:
+                self.sensorvar3.set(True)
+            if self.sensor4_checkbox["state"] == tk.NORMAL:
+                self.sensorvar4.set(True)
         
         #Erstellen und platzieren des Diagrammelements
         self.Graphmonitor = Graph(self.root, self.Templogger, self)
@@ -1204,7 +1213,6 @@ class GUI():
             csv_zeilen = list(csv.reader(datei,delimiter=';')) #Inhalt der Protokolldatei in eine Liste speichern
             #Wenn in der Protokolldatei in der ersten Zeile der erste Buchstabe ein "D" ist, dann zeige ein Fenster mit einer Fehlermeldung und verlasse die Funktion
         kalibriert = True
-        daten = csv_zeilen #setze die Daten auf die ausgelesenen Daten
         #Wenn in der Protokolldatei in der ersten Zeile am Start Differenztemperaturlogger steht, dann öffne eine Fehlermeldung, da aus einem Differenzlog kein Differenzgraph gebildet werden kann
         if csv_zeilen[0][0][0:25] == "Differenztemperaturlogger":
             messagebox.showerror(title = "Ungeeignete Protokolldatei", message = "Es kann kein Differenzgraph aus einer Protokolldatei einer Differenztemperaturmessung erstellt werden.")
@@ -1214,7 +1222,6 @@ class GUI():
             #Prüfe ob die Protokolldaten unkalibriert sind, wenn ja dann setze die Flag zum markieren das es unkalibriert ist
             if csv_zeilen[0][0][17:31] == "(unkalibriert)":
                 kalibriert = False
-            daten = csv_zeilen[2:] #filtere den oberen Header aus den daten raus
         #Wenn nicht, dann...
         else:
             #Wenn die Protokolldatei nicht passen ist, dann...
@@ -1232,7 +1239,7 @@ class GUI():
                     return
 
         popup_window.destroy() #Pop Up Fenster schließen
-        self.show_protokoll_differenz(daten,dateiname,sen1,sen2,kalibriert)
+        self.show_protokoll_differenz(csv_zeilen[2:],dateiname,sen1,sen2,kalibriert)
         self.show_protokoll_differenz_graph(csv_zeilen[2:],dateiname,sen1,sen2,kalibriert)
     
     #Funktion zum Öffnen eines Fensters zum Durchsuchen nach einer Datei
@@ -1771,16 +1778,16 @@ class GUI():
         treeview.column("Zeitstempel", minwidth=180,width=180,stretch=1)
         #Definiere die Spaltenüberschriften und die Spaltenbreite des Treeview in abhängigkeit der Protokollart
         if differenz_log:
-            treeview.heading('Sensor1', text='Sensor {} - Sensor {}'.format(sen1,sen2))
+            treeview.heading('Sensor1', text='Sensor {} - Sensor {} [°C]'.format(sen1,sen2))
             treeview.column("Sensor1", minwidth=306,width=102,stretch=1)
         else:
-            treeview.heading('Sensor1', text='Sensor 1')
+            treeview.heading('Sensor1', text='Sensor 1 [°C]')
             treeview.column("Sensor1", minwidth=102,width=102,stretch=1)
-            treeview.heading('Sensor2', text='Sensor 2')
+            treeview.heading('Sensor2', text='Sensor 2 [°C]')
             treeview.column("Sensor2",minwidth=102,width=102,stretch=1)
-            treeview.heading('Sensor3', text='Sensor 3')
+            treeview.heading('Sensor3', text='Sensor 3 [°C]')
             treeview.column("Sensor3", minwidth=102,width=102,stretch=1)
-            treeview.heading('Sensor4', text='Sensor 4')
+            treeview.heading('Sensor4', text='Sensor 4 [°C]')
             treeview.column("Sensor4", minwidth=102,width=102,stretch=1)
         #schreibe die Protokolldaten in den Treeview
         for zeile in daten:
@@ -1815,7 +1822,7 @@ class GUI():
         #Definiere die Spaltenüberschriften des Treeview
         treeview.heading('Zeitstempel', text='Zeitstempel')
         treeview.column("Zeitstempel", minwidth=180,width=180,stretch=1)
-        treeview.heading('Differenz', text='Sensor {} - Sensor {}'.format(sen1,sen2))
+        treeview.heading('Differenz', text='Sensor {} - Sensor {} [°C]'.format(sen1,sen2))
         treeview.column("Differenz", minwidth=306,width=102,stretch=1)
         #schreibe die Protokolldaten in den Treeview
         for zeile in daten:
@@ -2146,6 +2153,7 @@ class GUI():
 
             #Toolbar erstellen und platzieren
             toolbar = NavigationToolbar2Tk(canvas, popup_window, pack_toolbar=False)
+            toolbar._Button("Daten anzeigen",None,None,lambda: self.show_protokoll_differenz(daten,dateiname,sen1,sen2,kalibriert))
             toolbar.pack(side=tk.BOTTOM,fill=tk.X)
         #Wenn es ein Fehler beim lesen oder darstellen des Protokolls gab, dann gebe eine Fehlermeldung aus und schließe das Fenster für den Graph
         except:

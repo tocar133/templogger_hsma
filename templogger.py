@@ -2400,7 +2400,8 @@ class Graph(tk.Frame):
         if self.Templogger.stop_all_threads.is_set(): return
         #Stelle den neu gezeichneten Graphen dar
         try:
-            self.canvas.draw()
+            #self.canvas.draw()
+            self.canvas.draw_idle()
         except:
             print("fehler beim zeichnen")
 

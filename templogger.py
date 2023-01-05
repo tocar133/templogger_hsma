@@ -21,7 +21,7 @@ import platform
 import sys
 import datetime
 import time
-import traceback
+#import traceback
 import dateutil
 import subprocess
 import numpy as np
@@ -29,7 +29,6 @@ import threading
 import psutil
 import tkinter as tk
 from tkinter import PhotoImage
-from tkinter.font import Font
 from tkinter import Toplevel, messagebox, ttk, filedialog
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolbar2Tk
 import matplotlib.pyplot as plt
@@ -236,7 +235,7 @@ class Templog():
         self.kalibrierfehler = False #Flag löschen, Markierung das eine Kalibrierung geladen wurde
 
     #Funktion zum Vorbereiten der Messungen
-    def vorbereitung(self, zeitraum, darstellungsrate, popup_window,differenzmessung,sen1=None,sen2=None):
+    def vorbereitung(self, zeitraum, darstellungsrate, popup_window):
         popup_window.destroy() #Schließe das Pop Up Fenster für die Eingaben der Mess- und Protokollierungsparameter
         #Wenn momentan eine andere Messung läuft, dann...
         if self.messung_gestartet:
@@ -281,6 +280,11 @@ class Templog():
         self.sen1 = None
         self.sen2 = None
 
+        self.GUI.options.entryconfig(2, state="normal")
+        self.GUI.options.entryconfig(3, state="normal")
+        self.GUI.stop_button["state"] = "normal"
+        self.GUI.pause_button["state"] = "normal"
+
         self.stop_all_threads.clear() #Flag für das beenden aller Threads löschen
         #Funktion verlassen und signalisieren, dass alles erfolgreich war
         return True
@@ -288,7 +292,7 @@ class Templog():
     #Funktion zum Vorbereiten und zum starten der benötigten Threads für Echtzeitmessungen
     def live_graph_starten(self, darstellungsrate, zeitraum, dateiname, protokollierungsrate, popup_window):
         #Wenn es bei der Vorbereitung Fehler gab, dann verlasse diese Funktion
-        if not self.vorbereitung(zeitraum, darstellungsrate, popup_window,False): return
+        if not self.vorbereitung(zeitraum, darstellungsrate, popup_window): return
 
         #Treeview für die aktuelle Messung vorbereiten
         self.GUI.treeview_log1.heading('Zeitstempel', text='Zeitstempel') #Spaltenüberschriften des Treeviews setzen
@@ -313,7 +317,7 @@ class Templog():
     #Funktion zum Vorbereitung und zum starten der benötigten Threads für eine Echtzeit-Differenzmessung
     def differenz_graph_starten(self, darstellungsrate, zeitraum, dateiname, protokollierungsrate, sen1, sen2, popup_window):
         #Wenn es bei der Vorbereitung Fehler gab, dann verlasse diese Funktion
-        if not self.vorbereitung(zeitraum, darstellungsrate,popup_window,True,sen1,sen2): return
+        if not self.vorbereitung(zeitraum, darstellungsrate,popup_window): return
         
         #Treeview für die aktuelle Messung vorbereiten
         self.GUI.treeview_log1.heading('Zeitstempel', text='Zeitstempel') #Spaltenüberschriften des Treeviews setzen
@@ -395,16 +399,24 @@ class Templog():
         #Wenn das Programm nicht im Debug Modus ist, dann...
         else:
             #Verrechne die aktuellen Temperaturwerte mit den Kalibrationsdaten der entsprechenden Sensoren und Speicher diesen Wert in der Variable
-            self.temp_sen1 = round(self.sensor1.temperature+((self.kalibrierungs_liste[0]-self.kalibrierungs_liste[2])+((self.kalibrierungs_liste[1]-self.kalibrierungs_liste[6])/self.kalibrierungs_liste[1])*self.sensor1.temperature), 3)
-            self.temp_sen2 = round(self.sensor2.temperature+((self.kalibrierungs_liste[0]-self.kalibrierungs_liste[3])+((self.kalibrierungs_liste[1]-self.kalibrierungs_liste[7])/self.kalibrierungs_liste[1])*self.sensor2.temperature), 3)
-            self.temp_sen3 = round(self.sensor3.temperature+((self.kalibrierungs_liste[0]-self.kalibrierungs_liste[4])+((self.kalibrierungs_liste[1]-self.kalibrierungs_liste[8])/self.kalibrierungs_liste[1])*self.sensor3.temperature), 3)
-            self.temp_sen4 = round(self.sensor4.temperature+((self.kalibrierungs_liste[0]-self.kalibrierungs_liste[5])+((self.kalibrierungs_liste[1]-self.kalibrierungs_liste[9])/self.kalibrierungs_liste[1])*self.sensor4.temperature), 3)
+            #self.temp_sen1 = round(self.sensor1.temperature+((self.kalibrierungs_liste[0]-self.kalibrierungs_liste[2])+((self.kalibrierungs_liste[1]-self.kalibrierungs_liste[6])/self.kalibrierungs_liste[1])*self.sensor1.temperature), 3)
+            #self.temp_sen2 = round(self.sensor2.temperature+((self.kalibrierungs_liste[0]-self.kalibrierungs_liste[3])+((self.kalibrierungs_liste[1]-self.kalibrierungs_liste[7])/self.kalibrierungs_liste[1])*self.sensor2.temperature), 3)
+            #self.temp_sen3 = round(self.sensor3.temperature+((self.kalibrierungs_liste[0]-self.kalibrierungs_liste[4])+((self.kalibrierungs_liste[1]-self.kalibrierungs_liste[8])/self.kalibrierungs_liste[1])*self.sensor3.temperature), 3)
+            #self.temp_sen4 = round(self.sensor4.temperature+((self.kalibrierungs_liste[0]-self.kalibrierungs_liste[5])+((self.kalibrierungs_liste[1]-self.kalibrierungs_liste[9])/self.kalibrierungs_liste[1])*self.sensor4.temperature), 3)
+            t1 = self.sensor1.temperature
+            t2 = self.sensor2.temperature
+            t3 = self.sensor3.temperature
+            t4  =self.sensor4.temperature
+            self.temp_sen1 = round(t1+((self.kalibrierungs_liste[0]-self.kalibrierungs_liste[2])+(((self.kalibrierungs_liste[1]-self.kalibrierungs_liste[6])-(self.kalibrierungs_liste[0]-self.kalibrierungs_liste[2]))/self.kalibrierungs_liste[1])*t1), 3)
+            self.temp_sen2 = round(t2+((self.kalibrierungs_liste[0]-self.kalibrierungs_liste[3])+(((self.kalibrierungs_liste[1]-self.kalibrierungs_liste[7])-(self.kalibrierungs_liste[0]-self.kalibrierungs_liste[3]))/self.kalibrierungs_liste[1])*t2), 3)
+            self.temp_sen3 = round(t3+((self.kalibrierungs_liste[0]-self.kalibrierungs_liste[4])+(((self.kalibrierungs_liste[1]-self.kalibrierungs_liste[8])-(self.kalibrierungs_liste[0]-self.kalibrierungs_liste[4]))/self.kalibrierungs_liste[1])*t3), 3)
+            self.temp_sen4 = round(t4+((self.kalibrierungs_liste[0]-self.kalibrierungs_liste[5])+(((self.kalibrierungs_liste[1]-self.kalibrierungs_liste[9])-(self.kalibrierungs_liste[0]-self.kalibrierungs_liste[5]))/self.kalibrierungs_liste[1])*t4), 3)
     
     #Funktion für den Protokollierungs Thread
     #Die Messwerte vom letzten Messzyklus mit dem entsprechenden Zeitstempel in die Protokolldatei schreiben
     def protokollieren(self, dateiname, sen1=None, sen2=None):
         header_geschrieben = False #Flag zu Markierung, ob der Header geschrieben wurde
-        start = self.zeit_stempel #zwischenspeichern der Protokollstartzeit
+        start = datetime.datetime.now() #zwischenspeichern der Protokollstartzeit
         
         #Wenn als Dateiname der Wert <<Erster Zeitstempel>> übergeben wurde, dann...
         if dateiname == "<<Erster Zeitstempel>>":
@@ -493,15 +505,20 @@ class Templog():
             
             anzeigen = [self.GUI.sensorvar1.get(), self.GUI.sensorvar2.get(), self.GUI.sensorvar3.get(), self.GUI.sensorvar4.get()] #Ermitteln welche Sensoren im Graph angezeigt werden sollen und dies in einer Liste speichern
             #sta = datetime.datetime.now()
-            self.Graph.update(anzeigen,None,None) #Funktion zum update des Graphen aufrufen
             #print("Dauer für Graph update: {}\t\t{}".format((datetime.datetime.now()-sta).total_seconds(),len(self.datumlist)))
             #Wenn der Thread beendet werden soll verlasse die Schleife
             if self.stop_all_threads.is_set():break
-            self.GUI.update_sensor_label(anzeigen,temp1,temp2,temp3,temp4) #Temperaturanzeige der Sensoren updaten
-            self.GUI.update_treeview(datum,temp1,temp2,temp3,temp4) #Textlog der letzten Darstellungszeitpunkte updaten
+            #print("snesor label update")
+            #self.GUI.update_sensor_label(anzeigen,temp1,temp2,temp3,temp4) #Temperaturanzeige der Sensoren updaten
+            self.GUI.root.after_idle(lambda: self.GUI.update_sensor_label(anzeigen,temp1,temp2,temp3,temp4))
+            #self.GUI.update_treeview(datum,temp1,temp2,temp3,temp4) #Textlog der letzten Darstellungszeitpunkte updaten
+            self.GUI.root.after_idle(lambda: self.GUI.update_treeview(datum,temp1,temp2,temp3,temp4))
+            #print("treeview fertig")
             #Flag setzten um zu signalisieren, dass der Graph neu gezeichnet wurde
+            #print("graph update")
+            self.Graph.update(anzeigen,None,None) #Funktion zum update des Graphen aufrufen
             self.zeichnen_fertig.set()
-        print("zeichen Thread beendet")
+        #print("zeichen thread beendet")
 
     #Funktion für den Thread für die Darstellung der Differenztemperatur im Graphen
     #Schleife zur wiederholten Darstellung der Differenzmessdaten im Graph, bis dieser über eine Flag beendet wird
@@ -537,11 +554,13 @@ class Templog():
             self.Graph.update([1,0,0,0],sen1,sen2) #Funktion zum update des Graphen aufrufen
             #Wenn der Thread beendet werden soll verlasse die Schleife
             if self.stop_all_threads.is_set():return
-            self.GUI.update_sensor_label(anzeigen,t1,t2,t3,t4) #Temperaturanzeige der Sensoren updaten
-            self.GUI.update_treeview(datum,temp1,temp2) #Textlog der letzten Darstellungszeitpunkte updaten
+            #self.GUI.update_sensor_label(anzeigen,t1,t2,t3,t4) 
+            self.GUI.root.after_idle(lambda: self.GUI.update_sensor_label(anzeigen,t1,t2,t3,t4)) #Temperaturanzeige der Sensoren updaten
+            #self.GUI.update_treeview(datum,temp1,temp2) #Textlog der letzten Darstellungszeitpunkte updaten
+            self.GUI.root.after_idle(lambda: self.GUI.update_treeview(datum,temp1,temp2)) #Textlog der letzten Darstellungszeitpunkte updaten
             #Flag setzten um zu signalisieren, dass der Graph neu gezeichnet wurde
             self.zeichnen_fertig.set()
-        print("zeichen Thread beendet")
+        #print("zeichen Thread beendet")
     
     #Funktion zum beenden der Threads
     def threads_stop(self,timer_thread,protokoll_thread,graph_thread,protokollieren_warten,zeichnen_warten):
@@ -586,35 +605,64 @@ class Templog():
 
     #Funktion zum zurücksetzten der Bedienoberfläche und zum beenden der Messung
     def stop_messung(self):
-        #Checkboxen der Sensoren wieder bedienbar machen
-        #Textfarbe der Temperaturanzeige der Sensoren wieder auf schwarz setzen
-        if self.GUI.sensor1_label.cget("text") != "nicht verfügbar":
-            self.GUI.sensor1_checkbox.config(state=tk.NORMAL)
-            self.GUI.sensor1_label.config(fg="black")
-        if self.GUI.sensor2_label.cget("text") != "nicht verfügbar":
-            self.GUI.sensor2_checkbox.config(state=tk.NORMAL)
-            self.GUI.sensor2_label.config(fg="black")
-        if self.GUI.sensor3_label.cget("text") != "nicht verfügbar":
-            self.GUI.sensor3_checkbox.config(state=tk.NORMAL)
-            self.GUI.sensor3_label.config(fg="black")
-        if self.GUI.sensor4_label.cget("text") != "nicht verfügbar":
-            self.GUI.sensor4_checkbox.config(state=tk.NORMAL)
-            self.GUI.sensor4_label.config(fg="black")
-
         self.stop_all_threads.set() #Variable setzen zum beenden der Threads
 
+        #Checkboxen der Sensoren wieder bedienbar machen
+        #Textfarbe der Temperaturanzeige der Sensoren wieder auf schwarz setzen
+        #if self.GUI.sensor1_label.cget("text") != "nicht verfügbar":
+        if self.GUI.sensor1_label_text.get() != "nicht verfügbar":
+            self.GUI.sensor1_checkbox.config(state=tk.NORMAL)
+            self.GUI.sensor1_label.config(fg="black")
+        #if self.GUI.sensor2_label.cget("text") != "nicht verfügbar":
+        if self.GUI.sensor2_label_text.get() != "nicht verfügbar":
+            self.GUI.sensor2_checkbox.config(state=tk.NORMAL)
+            self.GUI.sensor2_label.config(fg="black")
+        #if self.GUI.sensor3_label.cget("text") != "nicht verfügbar":
+        if self.GUI.sensor3_label_text.get() != "nicht verfügbar":
+            self.GUI.sensor3_checkbox.config(state=tk.NORMAL)
+            self.GUI.sensor3_label.config(fg="black")
+        #if self.GUI.sensor4_label.cget("text") != "nicht verfügbar":
+        if self.GUI.sensor4_label_text.get() != "nicht verfügbar":
+            self.GUI.sensor4_checkbox.config(state=tk.NORMAL)
+            self.GUI.sensor4_label.config(fg="black")
+        
+        #Menüeintrag auf Ausgangpunkt zurücksetzen
+        self.GUI.options.entryconfigure(2,label="Messung pausieren")
+        self.GUI.options.entryconfig(2, state="disabled")
+        self.GUI.options.entryconfig(3, state="disabled")
+        self.GUI.stop_button["state"] = "disabled"
+        self.GUI.pause_button["state"] = "disabled"
+
+        #thr = threading.Thread(target=self.threads_stop,args=(self.sek_timer,self.running_protokoll,self.running_graph,self.protokollieren_warten,self.zeichnen_warten))
+        #thr.start()
+        #Wenn eine Messung gestartet wurde, dann beende die gestarteten Threads
+        if self.messung_gestartet:
+            #Wenn die Variable ein Thread ist, dann...
+            if self.sek_timer != None:
+                self.sek_timer.join(1) #Warte bis der Thread beendet ist
+            if self.running_protokoll != None:
+                #Thread aufwecken
+                with self.protokollieren_warten:
+                    self.protokollieren_warten.notify()
+                #Warten bis Thread beendet wurde, max Wartezeit 0,5 Sek
+                self.running_protokoll.join(1)
+            #Wenn die Variable ein Thread ist, dann...
+            if self.running_graph != None:
+                #Thread aufwecken
+                with self.zeichnen_warten:
+                    self.zeichnen_warten.notify()
+                #Warten bis Thread beendet wurde, max Wartezeit 0,5 Sek
+                self.running_graph.join(1)
+            #Stop der Messung mit dem aktuellen Zeitstempel in der Konsole bekannt geben
+            print(datetime.datetime.now().strftime("%d.%m.%Y %H:%M:%S") + " Messung gestoppt")
+            #Flag löschen, dass keine Messung gestartet ist
+            self.messung_gestartet = 0
+
+        #time.sleep(1)
         #Flags auf Ausgangspunkt setzen
         self.zeichnen_gestartet.clear()
         self.zeichnen_fertig.set()
         self.timer_run.set()
-
-        thr = threading.Thread(target=self.threads_stop,args=(self.sek_timer,self.running_protokoll,self.running_graph,self.protokollieren_warten,self.zeichnen_warten))
-        thr.start()
-
-        time.sleep(1)
-        
-        #Menüeintrag auf Ausgangpunkt zurücksetzen
-        self.GUI.options.entryconfigure(2,label="Messung pausieren")
 
 #Klasse zum darstellen und steuern der Bedienoberfläche
 class GUI():
@@ -641,6 +689,7 @@ class GUI():
         self.style.theme_use('clam')
         self.style.configure("TCombobox",fieldbackground= "light yellow",arrowsize=20)
         self.style.configure('TSpinbox',fieldbackground= "light yellow",arrowsize=20)
+        self.style.configure('neuer_zeitraum.TSpinbox',fieldbackground= "white")
         self.style.configure('Treeview.Heading', font=("sans-serif",10))
         
         self.root.option_add('*TCombobox*Listbox.font', (None,12))
@@ -658,22 +707,22 @@ class GUI():
         self.menubar = tk.Menu(self.root, background='#22376F', foreground='white', activebackground='white', activeforeground='black') #Menüleiste erstellen
         
         self.liveGraphsMenu = tk.Menu(self.menubar, tearoff=0,font = ("", 50)) #Menüpunkt zum starten einer Echtzeittemperaturmessung erstellen
-        self.liveGraphsMenu.add_command(label="Messungen starten ohne Daten zu protokollieren",font = ("", 15), command=self.live_graph_popup) #Untermenüpunt Echtzeitmessung ohne Protokoll
-        self.liveGraphsMenu.add_command(label="Messungen starten, Daten protokollieren ohne einstellbare Abtastrate für die Darstellung",font = ("", 15), command=self.live_graph_protokoll_static_popup) #Untermenüpunt Echtzeitmessung mit Protokoll bei gleicher Darstellungs- und Protokollrate
-        self.liveGraphsMenu.add_command(label="Messungen starten, Daten protokollieren mit einstellbarer Abtastrate für die Darstellung",font = ("", 15), command=self.live_graph_protokoll_popup) #Untermenüpunt Echtzeitmessung mit Protokoll
+        self.liveGraphsMenu.add_command(label="Messungen ohne Protokollierung",font = ("", 15), command=self.live_graph_popup) #Untermenüpunt Echtzeitmessung ohne Protokoll
+        self.liveGraphsMenu.add_command(label="Messungen mit gleicher Darstellungs- und Protokollierungszeit",font = ("", 15), command=self.live_graph_protokoll_static_popup) #Untermenüpunt Echtzeitmessung mit Protokoll bei gleicher Darstellungs- und Protokollrate
+        self.liveGraphsMenu.add_command(label="Messungen mit unterschiedlicher Darstellungs- und Protokollierungszeit",font = ("", 15), command=self.live_graph_protokoll_popup) #Untermenüpunt Echtzeitmessung mit Protokoll
         
         self.differenzGraphsMenu = tk.Menu(self.menubar, tearoff=0)#Menüpunkt zum starten einer Differenztemperaturmessung erstellen
-        self.differenzGraphsMenu.add_command(label="Messungen für einen Differenzengraphen starten ohne Daten zu protokollieren",font = ("", 15), command=self.differenz_graph_popup) #Untermenüpunt Differenzmessung ohne Protokoll
-        self.differenzGraphsMenu.add_command(label="Messungen für einen Differenzengraphen starten, Daten protokollieren ohne einstellbare Abtastrate für die Darstellung",font = ("", 15), command=self.differenz_graph_protokoll_static_popup)#Untermenüpunt Differenzmessung mit Protokoll bei gleicher Darstellungs- und Protokollrate
-        self.differenzGraphsMenu.add_command(label="Messungen für einen Differenzengraphen starten, Daten protokollieren mit einstellbarer Abtastrate für die Darstellung",font = ("", 15), command=self.differenz_graph_protokoll_popup) #Untermenüpunt Differenzmessung mit Protokoll
+        self.differenzGraphsMenu.add_command(label="Messungen ohne Protokollierung",font = ("", 15), command=self.differenz_graph_popup) #Untermenüpunt Differenzmessung ohne Protokoll
+        self.differenzGraphsMenu.add_command(label="Messungen mit gleicher Darstellungs- und Protokollierungszeit",font = ("", 15), command=self.differenz_graph_protokoll_static_popup)#Untermenüpunt Differenzmessung mit Protokoll bei gleicher Darstellungs- und Protokollrate
+        self.differenzGraphsMenu.add_command(label="Messungen mit unterschiedlicher Darstellungs- und Protokollierungszeit",font = ("", 15), command=self.differenz_graph_protokoll_popup) #Untermenüpunt Differenzmessung mit Protokoll
         
         self.loadGraphs = tk.Menu(self.menubar, tearoff=0)#Menüpunkt zum laden protokollierter Daten erstellen
-        self.loadGraphs.add_command(label="Lade existierende Datei und bilde die Daten grafisch ab",font = ("", 15), command=self.protokoll_daten_popup) #Untermenüpunkt zum laden eines Protokolls einer Echtzeitmessung
-        self.loadGraphs.add_command(label="Lade existierende Datei und bilde einen Differenzgraphen ab",font = ("", 15), command=self.Protokolldaten_differenz_popup) #Untermenüpunkt zum laden eines Protokolls und der Bildung einer Differenztemperatur
+        self.loadGraphs.add_command(label="Protokolldatei laden",font = ("", 15), command=self.protokoll_daten_popup) #Untermenüpunkt zum laden eines Protokolls einer Echtzeitmessung
+        self.loadGraphs.add_command(label="Protokolldatei laden und Differenz bilden",font = ("", 15), command=self.protokolldaten_differenz_popup) #Untermenüpunkt zum laden eines Protokolls und der Bildung einer Differenztemperatur
         self.loadGraphs.add_command(label="Speicherort öffnen",font = ("", 15), command=self.open_save_folder) #Untermenüpunkt zum öffnen des Speicherorts
 
         self.options = tk.Menu(self.menubar, tearoff=0)#Menüpunkt für weitere Bedienpunkte
-        self.options.add_command(label='PT100 Temperatursensoren kalibrieren',font = ("", 15), command=self.Kalibrierung.start_kalibrieren) #Untermenüpunkt zum starten der Sensorkalibrierung
+        self.options.add_command(label='PT100-Temperatursensoren kalibrieren',font = ("", 15), command=self.Kalibrierung.start_kalibrieren) #Untermenüpunkt zum starten der Sensorkalibrierung
         self.options.add_separator() #Trennstrich zwischen den Untermenüpunkten
         self.options.add_command(label="Messungen pausieren",font = ("", 15), command=self.messung_pausieren) #Untermenüpunkt zum pausieren der Messung bzw. zum fortsetzen einer pausierten Messung
         self.options.add_command(label="Messungen stoppen",font = ("", 15), command=self.Templogger.stop_messung) #Untermenüpunkt zum stoppen der akutellen Messung
@@ -683,7 +732,7 @@ class GUI():
         #Menüpunkte zur Menüleiste hinzufügen und den Name der Menüpunkte festlegen
         self.menubar.add_cascade(label='Temperaturgraphen         ', menu=self.liveGraphsMenu,font = ("", 15))
         self.menubar.add_cascade(label='Differenztemperaturgraphen         ', menu=self.differenzGraphsMenu,font = ("", 15))
-        self.menubar.add_cascade(label='Existierende Dateien laden         ', menu=self.loadGraphs,font = ("", 15))
+        self.menubar.add_cascade(label='Protokoll laden         ', menu=self.loadGraphs,font = ("", 15))
         self.menubar.add_cascade(label='Weitere Optionen', menu=self.options,font = ("", 15))
 
         if platform.system() != "Linux":
@@ -693,10 +742,11 @@ class GUI():
             self.differenzGraphsMenu.entryconfig(0, state="disabled")
             self.differenzGraphsMenu.entryconfig(1, state="disabled")
             self.differenzGraphsMenu.entryconfig(2, state="disabled")
+            self.loadGraphs.entryconfig(2, state="disabled")
             self.options.entryconfig(0, state="disabled")
-            self.options.entryconfig(2, state="disabled")
-            self.options.entryconfig(3, state="disabled")
             self.options.entryconfig(4, state="disabled")
+        self.options.entryconfig(2, state="disabled")
+        self.options.entryconfig(3, state="disabled")
 
         self.root.config(menu=self.menubar) #Menüleiste zum Fenster hinzufügen
 
@@ -735,11 +785,16 @@ class GUI():
         self.sensor2_checkbox.grid(row=0, column=2)
         self.sensor3_checkbox.grid(row=0, column=3)
         self.sensor4_checkbox.grid(row=0, column=4)
+        
+        self.sensor1_label_text = tk.StringVar(self.root,"nicht ausgewählt")
+        self.sensor2_label_text = tk.StringVar(self.root,"nicht ausgewählt")
+        self.sensor3_label_text = tk.StringVar(self.root,"nicht ausgewählt")
+        self.sensor4_label_text = tk.StringVar(self.root,"nicht ausgewählt")
         #Sensortemperaturanzeige erstellen und platzieren
-        self.sensor1_label = tk.Label(self.sensor_frame,bg="lightgrey",borderwidth=0,highlightthickness=0, text="nicht ausgewählt")
-        self.sensor2_label = tk.Label(self.sensor_frame,bg="lightgrey",borderwidth=0,highlightthickness=0, text="nicht ausgewählt")
-        self.sensor3_label = tk.Label(self.sensor_frame,bg="lightgrey",borderwidth=0,highlightthickness=0, text="nicht ausgewählt")
-        self.sensor4_label = tk.Label(self.sensor_frame,bg="lightgrey",borderwidth=0,highlightthickness=0, text="nicht ausgewählt")
+        self.sensor1_label = tk.Label(self.sensor_frame,bg="lightgrey",borderwidth=0,highlightthickness=0, textvariable=self.sensor1_label_text)
+        self.sensor2_label = tk.Label(self.sensor_frame,bg="lightgrey",borderwidth=0,highlightthickness=0, textvariable=self.sensor2_label_text)
+        self.sensor3_label = tk.Label(self.sensor_frame,bg="lightgrey",borderwidth=0,highlightthickness=0, textvariable=self.sensor3_label_text)
+        self.sensor4_label = tk.Label(self.sensor_frame,bg="lightgrey",borderwidth=0,highlightthickness=0, textvariable=self.sensor4_label_text)
         self.sensor1_label.grid(row=1, column=1)
         self.sensor2_label.grid(row=1, column=2)
         self.sensor3_label.grid(row=1, column=3)
@@ -748,23 +803,25 @@ class GUI():
         self.sensoren_pruefen = tk.Button(self.sensor_frame,text="Sensoren prüfen",command=self.check_sensoren)
         self.sensoren_pruefen.grid(row=0, column=5,rowspan=2)
 
-        self.bild_stopp = PhotoImage(file = self.Templogger.programm_pfad + "/bilder/stopp.png")
-        self.bild_pause = PhotoImage(file = self.Templogger.programm_pfad + "/bilder/pause.png")
+        self.bild_stopp = PhotoImage(file = self.Templogger.programm_pfad + "/Bilder/stopp.png")
+        self.bild_pause = PhotoImage(file = self.Templogger.programm_pfad + "/Bilder/pause.png")
 
-        self.stop_button = tk.Button(self.sensor_frame,command=self.Templogger.stop_messung,image=self.bild_stopp)
+        self.stop_button = tk.Button(self.sensor_frame,command=self.Templogger.stop_messung,image=self.bild_stopp,state="disabled")
         self.stop_button.grid(row=0,column=7,rowspan=2)
-        self.pause_button = tk.Button(self.sensor_frame,command=self.messung_pausieren,image=self.bild_pause)
+        self.pause_button = tk.Button(self.sensor_frame,command=self.messung_pausieren,image=self.bild_pause,state="disabled")
         self.pause_button.grid(row=0,column=9,rowspan=2)
 
         if platform.system() != "Linux":
             sensorvar = [self.sensorvar1,self.sensorvar2,self.sensorvar3,self.sensorvar4]
             sensorlabel = [self.sensor1_label,self.sensor2_label,self.sensor3_label,self.sensor4_label]
+            sensortext = [self.sensor1_label_text,self.sensor2_label_text,self.sensor3_label_text,self.sensor4_label_text]
             #Schleife um auf die Sensor Checkboxen zuzugreifen
             for c,checkbox in enumerate([self.sensor1_checkbox,self.sensor2_checkbox,self.sensor3_checkbox,self.sensor4_checkbox]):
                     checkbox.config(state=tk.DISABLED) #Setze die Checkbox zum gesperrten Zustand
                     checkbox.config(disabledforeground="#a3a3a3") #Ändere die Schriftfarbe einer gesperrten Checkbox
                     sensorvar[c].set(False) #Setzte die Variable der Checkbox auf False (nicht gecheckt)
-                    sensorlabel[c].config(text="nicht verfügbar") #Setze den Text des Labels der Checkbox
+                    sensortext[c].set("nicht verfügbar")
+                    #sensorlabel[c].config(text="nicht verfügbar") #Setze den Text des Labels der Checkbox
                     #Setze die Schriftfarbe des Labels der Checkbox
                     sensorlabel[c].config(fg="#a3a3a3")
             self.sensoren_pruefen.config(state=tk.DISABLED)
@@ -798,7 +855,8 @@ class GUI():
 
         self.zeitraum_label = tk.Label(self.neuer_zeitraum_frame,text="neuer Zeitraum:")
         self.zeitraum_label.pack(side=tk.LEFT)
-        self.zeitraum_eingabe = tk.Spinbox(self.neuer_zeitraum_frame,bg="white",width=6,from_=1,to=9999999999999999999999,textvariable=self.neuer_zeitraum_var)
+        #self.zeitraum_eingabe = tk.Spinbox(self.neuer_zeitraum_frame,bg="white",width=6,from_=1,to=9999999999999999999999,textvariable=self.neuer_zeitraum_var)
+        self.zeitraum_eingabe = ttk.Spinbox(self.neuer_zeitraum_frame,style='neuer_zeitraum.TSpinbox',font=self.font,width=6,from_=1,to=9999999999999999999999,textvariable=self.neuer_zeitraum_var)
         self.zeitraum_eingabe.pack(side=tk.LEFT)
         self.minuten_label = tk.Label(self.neuer_zeitraum_frame,text="Minuten")
         self.minuten_label.pack(side=tk.LEFT)
@@ -839,8 +897,8 @@ class GUI():
     def open_save_folder(self):
         os.system('xdg-open {}/Saves/'.format(self.Templogger.programm_pfad))
 
-    #Funktion zum öffnen der Bildschirmtastatur
-    def open_keyboard(self):
+    #Funktion zum schließen der offenen Bildschirmtastaturen
+    def close_keyboard(self):
         #Durchlaufe alle vorhandenen Prozesse
         for proc in psutil.process_iter():
             try:
@@ -849,6 +907,10 @@ class GUI():
                     subprocess.Popen.kill(proc)
             except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):
                 pass
+    
+    #Funktion zum öffnen der Bildschirmtastatur
+    def open_keyboard(self):
+        self.close_keyboard()
         #Starte einen neuen Prozess des matchbox-keyboards
         subprocess.Popen(['matchbox-keyboard'])
 
@@ -884,6 +946,7 @@ class GUI():
         sensoren = [self.Templogger.temp_sen1,self.Templogger.temp_sen2,self.Templogger.temp_sen3,self.Templogger.temp_sen4]
         sensorvar = [self.sensorvar1,self.sensorvar2,self.sensorvar3,self.sensorvar4]
         sensorlabel = [self.sensor1_label,self.sensor2_label,self.sensor3_label,self.sensor4_label]
+        sensortext = [self.sensor1_label_text,self.sensor2_label_text,self.sensor3_label_text,self.sensor4_label_text]
         #Schleife um auf die Sensor Checkboxen zuzugreifen
         for c,checkbox in enumerate([self.sensor1_checkbox,self.sensor2_checkbox,self.sensor3_checkbox,self.sensor4_checkbox]):
             #Wenn die Temperatur des Sensors innerhalb des Bereichs -200 bis +200 Grad liegt, dann...
@@ -895,14 +958,17 @@ class GUI():
                     if checkbox.cget("state") != tk.NORMAL:
                         checkbox.config(state=tk.NORMAL) #Setze die Checkbox zum normalen Zustand
                         sensorvar[c].set(False) #Setzte die Variable der Checkbox auf False (nicht gecheckt)
-                        sensorlabel[c].config(text="nicht ausgewählt") #Setze den Text des Labels der Checkbox
+                        #sensorlabel[c].config(text="nicht ausgewählt") #Setze den Text des Labels der Checkbox
+                        sensortext[c].set("nicht ausgewählt")
+
                         sensorlabel[c].config(fg="black") #Setze die Schriftfarbe des Labels der Checkbox
             #Wenn die Temperatur außerhalb des Bereichs liegt, dann...
             else:
                 checkbox.config(state=tk.DISABLED) #Setze die Checkbox zum gesperrten Zustand
                 checkbox.config(disabledforeground="#a3a3a3") #Ändere die Schriftfarbe einer gesperrten Checkbox
                 sensorvar[c].set(False) #Setzte die Variable der Checkbox auf False (nicht gecheckt)
-                sensorlabel[c].config(text="nicht verfügbar") #Setze den Text des Labels der Checkbox
+                #sensorlabel[c].config(text="nicht verfügbar") #Setze den Text des Labels der Checkbox
+                sensortext[c].set("nicht verfügbar")
                 #Setze die Schriftfarbe des Labels der Checkbox
                 sensorlabel[c].config(fg="#a3a3a3")
 
@@ -945,7 +1011,7 @@ class GUI():
         if self.Templogger.timer_run.is_set():
             self.options.entryconfigure(2,label="Messung fortsetzen") #Ändere den Text des Menüeintrags
             
-            self.bild_pause = PhotoImage(file = self.Templogger.programm_pfad + "/bilder/play.png")
+            self.bild_pause = PhotoImage(file = self.Templogger.programm_pfad + "/Bilder/play.png")
             self.pause_button["image"] = self.bild_pause
 
             self.Templogger.timer_run.clear() #Lösche die Flag um die Messung zu pausieren
@@ -954,7 +1020,7 @@ class GUI():
         else:
             self.options.entryconfigure(2,label="Messung pausieren") #Ändere den Text des Menüeintrags
 
-            self.bild_pause = PhotoImage(file = self.Templogger.programm_pfad + "/bilder/pause.png")
+            self.bild_pause = PhotoImage(file = self.Templogger.programm_pfad + "/Bilder/pause.png")
             self.pause_button["image"] = self.bild_pause
 
             #Setze die Flag zum fortsetzen der Messung
@@ -975,25 +1041,37 @@ class GUI():
     def update_sensor_label(self,anzeigen,temp1,temp2,temp3,temp4):
         #Wenn über die Liste der Sensor ausgewählt wurde, dann...
         if anzeigen[0]:
-            self.sensor1_label.configure(text=str(round(temp1, 2)) + "°C") #Ändere den Text zum Temperaturwert der letzten Messung
+            #self.sensor1_label.configure(text=str(round(temp1, 2)) + " °C") #Ändere den Text zum Temperaturwert der letzten Messung
+            self.sensor1_label_text.set(str(round(temp1, 2)) + " °C")
         #Sonst...
-        elif self.sensor1_label.cget("text") != "nicht verfügbar":
-            self.sensor1_label.configure(text="nicht ausgewählt") #Ändere den Text
+        #elif self.sensor1_label.cget("text") != "nicht verfügbar":
+        elif self.sensor1_label_text.get() != "nicht verfügbar":
+            #self.sensor1_label.configure(text="nicht ausgewählt") #Ändere den Text
+            self.sensor1_label_text.set("nicht ausgewählt")
 
         if anzeigen[1]:
-            self.sensor2_label.configure(text=str(round(temp2, 2)) + "°C")
-        elif self.sensor2_label.cget("text") != "nicht verfügbar":
-            self.sensor2_label.configure(text="nicht ausgewählt")
+            #self.sensor2_label.configure(text=str(round(temp2, 2)) + " °C")
+            self.sensor2_label_text.set(str(round(temp2, 2)) + " °C")
+        #elif self.sensor2_label.cget("text") != "nicht verfügbar":
+        elif self.sensor2_label_text.get() != "nicht verfügbar":
+            #self.sensor2_label.configure(text="nicht ausgewählt")
+            self.sensor2_label_text.set("nicht ausgewählt")
 
         if anzeigen[2]:
-            self.sensor3_label.configure(text=str(round(temp3, 2)) + "°C")
-        elif self.sensor3_label.cget("text") != "nicht verfügbar":
-            self.sensor3_label.configure(text="nicht ausgewählt")
+            #self.sensor3_label.configure(text=str(round(temp3, 2)) + " °C")
+            self.sensor3_label_text.set(str(round(temp3, 2)) + " °C")
+        #elif self.sensor3_label.cget("text") != "nicht verfügbar":
+        elif self.sensor3_label_text.get() != "nicht verfügbar":
+            #self.sensor3_label.configure(text="nicht ausgewählt")
+            self.sensor3_label_text.set("nicht ausgewählt")
 
         if anzeigen[3]:
-            self.sensor4_label.configure(text=str(round(temp4, 2)) + "°C")
-        elif self.sensor4_label.cget("text") != "nicht verfügbar":
-            self.sensor4_label.configure(text="nicht ausgewählt")
+            #self.sensor4_label.configure(text=str(round(temp4, 2)) + " °C")
+            self.sensor4_label_text.set(str(round(temp4, 2)) + " °C")
+        #elif self.sensor4_label.cget("text") != "nicht verfügbar":
+        elif self.sensor4_label_text.get() != "nicht verfügbar":
+            #self.sensor4_label.configure(text="nicht ausgewählt")
+            self.sensor4_label_text.set("nicht ausgewählt")
 
     #Funktion zum aktualisieren der Treeviews mit den Einträgen der letzten Darstellungspunkte
     def update_treeview(self,datum,temp1,temp2,temp3=None,temp4=None):
@@ -1054,6 +1132,7 @@ class GUI():
         if darstellungsrate > zeitraum * 60:
             messagebox.showerror(title = "Zu kleiner Zeitraum", message = "Bitte geben Sie eine Zeitraum der größer als die Darstellungsrate ist ein.")
             return
+        self.close_keyboard()
         #Wenn alle Prüfung erfolgreich waren, dann gebe die Parameter weiter um die Messung zu starten
         self.Templogger.live_graph_starten(int(darstellungsrate), int(zeitraum), dateiname, int(protokollierungsrate), popup_window)
 
@@ -1110,6 +1189,7 @@ class GUI():
         if sen1 == sen2:
             messagebox.showerror(title = "Gleiche Sensoren", message = "Bitte wählen Sie unterschiedliche Sensoren aus.")
             return
+        self.close_keyboard()
         #Wenn alle Prüfung erfolgreich waren, dann gebe die Parameter weiter um die Messung zu starten
         self.Templogger.differenz_graph_starten(int(darstellungsrate), int(zeitraum), dateiname, int(protokollierungsrate), sen1, sen2, popup_window)
 
@@ -1262,7 +1342,7 @@ class GUI():
         self.zeitraum_var = tk.IntVar(value=5) #Variable für die Spinbox zum auswählen des Zeitraums
 
         popup_window = Toplevel(self.root) #Pop Up Fenster erzeugen
-        popup_window.geometry("630x250") #Größe des Pop Up Fensters festlegen
+        popup_window.geometry("500x250") #Größe des Pop Up Fensters festlegen
         #Positions des Hauptfensters abfragen
         x = self.root.winfo_x()
         y = self.root.winfo_y()
@@ -1271,7 +1351,7 @@ class GUI():
         popup_window.title("Einstellungen für die Darstellung") #Titel des Pop Up Fensters festlegen
         
         #Label und Spinbox für die Darstellungsrate erstellen und platzieren
-        darstellungsrate_label = tk.Label(popup_window,font=self.font, text="Darstellungsrate in Sekunden zur Darstellung von Messpunkten (Min. 4 Sek.):", pady=10, padx=20)
+        darstellungsrate_label = tk.Label(popup_window,font=self.font, text="Darstellungsaktualisierungszeit in Sekunden zur\nDarstellung von Messpunkten (Min. 4 Sek.):", pady=10, padx=20)
         darstellungsrate_label.pack()
         darstellungsrate = ttk.Spinbox(popup_window,font=self.font,width=30,from_=self.min_darstellungsrate,to=9999999999999999999999,textvariable=self.darstellungsrate_var)
         darstellungsrate.pack()
@@ -1317,7 +1397,7 @@ class GUI():
         popup_window.title("Einstellungen für Darstellung und Protokollierung") #Titel des Pop Up Fensters festlegen
 
         #Label und Spinbox für den Darstellungs- und Protokollierungsrate erstellen und platzieren
-        protokollierungsrate_label = tk.Label(popup_window,font=self.font, text="Darstellungs- und Protokollierungsrate in Sekunden von Messdaten (Min. 4 Sek.):", pady=10)
+        protokollierungsrate_label = tk.Label(popup_window,font=self.font, text="Darstellungs- und Protokollierungszeit in Sekunden von Messdaten (Min. 4 Sek.):", pady=10)
         protokollierungsrate_label.pack()
         protokollierungs_darstellungs_rate = ttk.Spinbox(popup_window,font=self.font,width=30,from_=self.min_darstellungsrate,to=9999999999999999999999,textvariable=self.protokollierungsrate_var)
         protokollierungs_darstellungs_rate.pack()
@@ -1343,7 +1423,11 @@ class GUI():
         button_frame.pack(pady=(7,0))
         okbutton = tk.Button(button_frame,font=self.font, text="Bestätigen", command=aufruf_zum_testen, height=2, width=15)
         okbutton.pack(side=tk.LEFT)
-        cancelbutton = tk.Button(button_frame,font=self.font, text="Abbrechen", command = popup_window.destroy, height=2, width=15)
+
+        def abbrechen():
+            self.close_keyboard()
+            popup_window.destroy()
+        cancelbutton = tk.Button(button_frame,font=self.font, text="Abbrechen", command=abbrechen, height=2, width=15)
         cancelbutton.pack(side=tk.LEFT)
 
         #Beim Enter drücken die Funktion zum Prüfen der Eingabeparameter aufrufen
@@ -1365,7 +1449,7 @@ class GUI():
         self.zeitraum_var = tk.IntVar(value=5) #Variable für die Spinbox zum auswählen des Zeitraums
 
         popup_window = Toplevel(self.root) #Pop Up Fenster erzeugen
-        popup_window.geometry("675x400") #Größe des Pop Up Fensters festlegen
+        popup_window.geometry("675x415") #Größe des Pop Up Fensters festlegen
         #Positions des Hauptfensters abfragen
         x = self.root.winfo_x()
         y = self.root.winfo_y()
@@ -1375,13 +1459,13 @@ class GUI():
         popup_window.title("Einstellungen für Darstellung und Protokollierung") #Titel des Pop Up Fensters festlegen
 
         #Label und Spinbox für die Protokollierungsrate erstellen und platzieren
-        protokollierungsrate_label = tk.Label(popup_window,font=self.font, text="Protokollierungsrate in Sekunden zur Protokollierung von Messpunkten:",pady=10)
+        protokollierungsrate_label = tk.Label(popup_window,font=self.font, text="Protokollierungsabstand in Sekunden zur Protokollierung von Messpunkten:",pady=10)
         protokollierungsrate_label.pack()
         protokollierungsrate = ttk.Spinbox(popup_window,font=self.font,width=30,from_=1,to=9999999999999999999999,textvariable=self.protokollierungsrate_var)
         protokollierungsrate.pack()
         protokollierungsrate.focus()
         #Label und Spinbox für die Darstellungsrate erstellen und platzieren
-        darstellungsrate_label = tk.Label(popup_window,font=self.font, text="Darstellungsrate in Sekunden zur Darstellung von Messpunkten (Min. 4 Sek.):",pady=10)
+        darstellungsrate_label = tk.Label(popup_window,font=self.font, text="Darstellungsaktualisierungszeit in Sekunden zur\nDarstellung von Messpunkten (Min. 4 Sek.):",pady=10)
         darstellungsrate_label.pack()
         darstellungsrate = ttk.Spinbox(popup_window,font=self.font,width=30,from_=self.min_darstellungsrate,to=9999999999999999999999,textvariable=self.darstellungsrate_var)
         darstellungsrate.pack()
@@ -1406,7 +1490,11 @@ class GUI():
         button_frame.pack(pady=(7,0))
         okbutton = tk.Button(button_frame,font=self.font, text="Bestätigen", command=aufruf_zum_testen, height=2, width=15)
         okbutton.pack(side=tk.LEFT)
-        cancelbutton = tk.Button(button_frame,font=self.font, text="Abbrechen", command = popup_window.destroy, height=2, width=15)
+
+        def abbrechen():
+            self.close_keyboard()
+            popup_window.destroy()
+        cancelbutton = tk.Button(button_frame,font=self.font, text="Abbrechen", command=abbrechen, height=2, width=15)
         cancelbutton.pack(side=tk.LEFT)
 
         #Beim Enter drücken die Funktion zum Prüfen der Eingabeparameter aufrufen
@@ -1430,7 +1518,7 @@ class GUI():
         self.zeitraum_var = tk.IntVar(value=5) #Variable für die Spinbox zum auswählen des Zeitraums
 
         popup_window = Toplevel(self.root) #Pop Up Fenster erzeugen
-        popup_window.geometry("630x390") #Größe des Pop Up Fensters festlegen
+        popup_window.geometry("500x400") #Größe des Pop Up Fensters festlegen
         #Positions des Hauptfensters abfragen
         x = self.root.winfo_x()
         y = self.root.winfo_y()
@@ -1440,7 +1528,7 @@ class GUI():
         popup_window.title("Einstellungen für die Darstellung") #Titel des Pop Up Fensters festlegen
         
         #Label und Spinbox für die Darstellungsrate erstellen und platzieren
-        darstellungsrate_label = tk.Label(popup_window,font=self.font, text="Darstellungsrate in Sekunden zur Darstellung von Messpunkten (Min. 4 Sek.):", pady=10, padx=20)
+        darstellungsrate_label = tk.Label(popup_window,font=self.font, text="Darstellungsaktualisierungszeit in Sekunden zur\nDarstellung von Messpunkten (Min. 4 Sek.):", pady=10, padx=20)
         darstellungsrate_label.pack()
         darstellungsrate = ttk.Spinbox(popup_window,font=self.font,width=30,from_=self.min_darstellungsrate,to=9999999999999999999999,textvariable=self.darstellungsrate_var)
         darstellungsrate.pack()
@@ -1501,7 +1589,7 @@ class GUI():
         popup_window.title("Einstellungen für Darstellung und Protokollierung") #Titel des Pop Up Fensters festlegen
 
         #Label und Spinbox für den Darstellungs- und Protokollierungsrate erstellen und platzieren
-        protokollierungs_darstellungs_rate_label = tk.Label(popup_window,font=self.font,text="Darstellungs- und Protokollierungsrate in Sekunden von Messdaten (Min. 4 Sek.):",pady=10, padx=20)
+        protokollierungs_darstellungs_rate_label = tk.Label(popup_window,font=self.font,text="Darstellungs- und Protokollierungszeit in Sekunden von Messdaten (Min. 4 Sek.):",pady=10, padx=20)
         protokollierungs_darstellungs_rate_label.pack()
         protokollierungs_darstellungs_rate = ttk.Spinbox(popup_window,font=self.font,width=30,from_=self.min_darstellungsrate,to=9999999999999999999999,textvariable=self.protokollierungsrate_var)
         protokollierungs_darstellungs_rate.pack()
@@ -1539,7 +1627,11 @@ class GUI():
         button_frame.pack(pady=(7,0))
         okbutton = tk.Button(button_frame, text="Bestätigen",font=self.font, command=aufruf_zum_testen, height=2, width=15)
         okbutton.pack(side=tk.LEFT)
-        cancelbutton = tk.Button(button_frame,font=self.font, text="Abbrechen", command = popup_window.destroy, height=2, width=15)
+
+        def abbrechen():
+            self.close_keyboard()
+            popup_window.destroy()
+        cancelbutton = tk.Button(button_frame,font=self.font, text="Abbrechen", command=abbrechen, height=2, width=15)
         cancelbutton.pack(side=tk.LEFT)
 
         #Beim Enter drücken die Funktion zum Prüfen der Eingabeparameter aufrufen
@@ -1563,7 +1655,7 @@ class GUI():
         self.zeitraum_var = tk.IntVar(value=5) #Variable für die Spinbox zum auswählen des Zeitraums
 
         popup_window = Toplevel(self.root) #Pop Up Fenster erzeugen
-        popup_window.geometry("675x550") #Größe des Pop Up Fensters festlegen
+        popup_window.geometry("675x565") #Größe des Pop Up Fensters festlegen
         #Positions des Hauptfensters abfragen
         x = self.root.winfo_x()
         y = self.root.winfo_y()
@@ -1573,13 +1665,13 @@ class GUI():
         popup_window.title("Einstellungen für Darstellung und Protokollierung") #Titel des Pop Up Fensters festlegen
 
         #Label und Spinbox für die Protokollierungsrate erstellen und platzieren
-        protokollierungsrate_label = tk.Label(popup_window,font=self.font, text="Protokollierungsrate in Sekunden zur Protokollierung von Messpunkten:",pady=10, padx=20)
+        protokollierungsrate_label = tk.Label(popup_window,font=self.font, text="Protokollierungsabstand in Sekunden zur Protokollierung von Messpunkten:",pady=10, padx=20)
         protokollierungsrate_label.pack()
         protokollierungsrate = ttk.Spinbox(popup_window,font=self.font,width=30,from_=1,to=9999999999999999999999,textvariable=self.protokollierungsrate_var)
         protokollierungsrate.pack()
         protokollierungsrate.focus()
         #Label und Spinbox für die Darstellungsrate erstellen und platzieren
-        darstellungsrate_label = tk.Label(popup_window,font=self.font, text="Darstellungsrate in Sekunden zur Darstellung von Messpunkten (Min. 4 Sek.):", pady=10, padx=20)
+        darstellungsrate_label = tk.Label(popup_window,font=self.font, text="Darstellungsaktualisierungszeit in Sekunden zur\nDarstellung von Messpunkten (Min. 4 Sek.):", pady=10, padx=20)
         darstellungsrate_label.pack()
         darstellungsrate = ttk.Spinbox(popup_window,width=30,font=self.font,from_=self.min_darstellungsrate,to=9999999999999999999999,textvariable=self.darstellungsrate_var)
         darstellungsrate.pack()
@@ -1616,7 +1708,11 @@ class GUI():
         button_frame.pack(pady=(7,0))
         okbutton = tk.Button(button_frame,font=self.font, text="Bestätigen", command=aufruf_zum_testen, height=2, width=15)
         okbutton.pack(side=tk.LEFT)
-        cancelbutton = tk.Button(button_frame,font=self.font, text="Abbrechen", command = popup_window.destroy, height=2, width=15)
+
+        def abbrechen():
+            self.close_keyboard()
+            popup_window.destroy()
+        cancelbutton = tk.Button(button_frame,font=self.font, text="Abbrechen", command=abbrechen, height=2, width=15)
         cancelbutton.pack(side=tk.LEFT)
 
         #Beim Enter drücken die Funktion zum Prüfen der Eingabeparameter aufrufen
@@ -1682,7 +1778,7 @@ class GUI():
         popup_window.bind("<Escape>", lambda _:popup_window.destroy())
 
     #Funktion zum Öffnen eines Pop Up Fensters zur Eingabe von Parametern zum Laden einer Protokolldatei und dem bilden eines Differenztemperaturgraphen
-    def Protokolldaten_differenz_popup(self):
+    def protokolldaten_differenz_popup(self):
         popup_window = Toplevel(self.root) #Pop Up Fenster erzeugen
         popup_window.geometry("480x310") #Größe des Pop Up Fensters festlegen
         #Positions des Hauptfensters abfragen
@@ -2044,7 +2140,7 @@ class GUI():
 
         #Wenn es ein Fehler beim lesen oder darstellen des Protokolls gab, dann gebe eine Fehlermeldung aus und schließe das Fenster für den Graph
         except Exception:
-            print(traceback.format_exc())
+            #print(traceback.format_exc())
             messagebox.showerror(parent=popup_window,title = "Fehler beim darstellen", message = "Es trat ein Fehler beim darstellen des Protokolls auf.")
             popup_window.destroy()
             return
@@ -2171,6 +2267,7 @@ class GUI():
     def close(self):
         self.Templogger.stop_messung() #Rufe die Funktion zum beenden der Messung auf
         #schließe das Fenster
+        self.root.quit()
         self.root.destroy()
 
     #Funktion zum neustarten des Programms
@@ -2399,16 +2496,15 @@ class Graph(tk.Frame):
         #Wenn der Thread für die Darstellung beendet werden soll, dann verlasse die Funktion
         if self.Templogger.stop_all_threads.is_set(): return
         #Stelle den neu gezeichneten Graphen dar
-        try:
-            #self.canvas.draw()
-            self.canvas.draw_idle()
-        except:
-            print("fehler beim zeichnen")
+        #self.canvas.draw()
+        #print("graph update flag")
+        self.canvas.draw_idle()
+        #print("graph update flag wurde gesetzt")
 
 #Wenn diese Datei als Programm aufgerufen und nicht als Modul importiert wird, dann...
 if __name__ == "__main__":
     DEBUG = False #Deaktiviert den Debug Betriebsmodus
-    #DEBUG = True #nur für die Entwicklungszeit, danach entfernen
+    DEBUG = True #nur für die Entwicklungszeit, danach entfernen
     #Wenn das Programm mit dem Argument DEBUG aufgerufen wird, dann...
     if "DEBUG" in sys.argv[1:]:
         DEBUG = True #Aktiviere den Debug Betriebsmodus

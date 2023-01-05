@@ -76,7 +76,7 @@ class Kalibrierung():
         y = self.GUI.root.winfo_y()
         popup_window.geometry("+%d+%d" % (x + (self.GUI.root.winfo_width()-370)/2, y + (self.GUI.root.winfo_height()-150)/2)) #Position des Pop Up Fensters festlegen
         popup_window.wm_transient(self.GUI.root)
-        popup_window.title("Kalibrieren für 0°C") #Titel des Pop Up Fensters festlegen
+        popup_window.title("Kalibrieren für 0 °C") #Titel des Pop Up Fensters festlegen
 
         #Label für die Beschriftung erstellen und platzieren
         beschreibungs_label = tk.Label(popup_window,font=self.GUI.font, text="Referenztemperatur [°C]:", pady=10)
@@ -92,7 +92,7 @@ class Kalibrierung():
         #Buttons zum Bestätigen oder Abbrechen der Eingabe erstellen und platzieren
         button_frame = tk.Frame(popup_window,pady=5)
         button_frame.pack()
-        okbutton = tk.Button(button_frame,font=self.GUI.font, text="0°C kalibrieren", command=aufruf_zum_testen,height=2,width=15)
+        okbutton = tk.Button(button_frame,font=self.GUI.font, text="0 °C kalibrieren", command=aufruf_zum_testen,height=2,width=15)
         okbutton.pack(side=tk.LEFT)
         cancelbutton = tk.Button(button_frame,font=self.GUI.font, text="Abbrechen", command=lambda: self.kalibrierung_abbrechen(popup_window), height=2, width=15)
         cancelbutton.pack(side=tk.LEFT)
@@ -115,7 +115,7 @@ class Kalibrierung():
         y = self.GUI.root.winfo_y()
         popup_window.geometry("+%d+%d" % (x + (self.GUI.root.winfo_width()-370)/2, y + (self.GUI.root.winfo_height()-150)/2)) #Position des Pop Up Fensters festlegen
         popup_window.wm_transient(self.GUI.root)
-        popup_window.title("Kalibrieren für 100°C") #Titel des Pop Up Fensters festlegen
+        popup_window.title("Kalibrieren für 100 °C") #Titel des Pop Up Fensters festlegen
 
         #Label für die Beschriftung erstellen und platzieren
         beschreibungs_label = tk.Label(popup_window,font=self.GUI.font, text="Referenztemperatur [°C]:", pady=10)
@@ -131,7 +131,7 @@ class Kalibrierung():
         #Buttons zum Bestätigen oder Abbrechen der Eingabe erstellen und platzieren
         button_frame = tk.Frame(popup_window,pady=5)
         button_frame.pack()
-        okbutton = tk.Button(button_frame,font=self.GUI.font, text="100°C kalibrieren", command=aufruf_zum_testen,height=2,width=15)
+        okbutton = tk.Button(button_frame,font=self.GUI.font, text="100 °C kalibrieren", command=aufruf_zum_testen,height=2,width=15)
         okbutton.pack(side=tk.LEFT)
         cancelbutton = tk.Button(button_frame,font=self.GUI.font, text="Abbrechen", command=lambda: self.kalibrierung_abbrechen(popup_window), height=2, width=15)
         cancelbutton.pack(side=tk.LEFT)

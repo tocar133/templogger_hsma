@@ -702,6 +702,10 @@ class GUI():
         self.Kalibrierung = kalibrierung.Kalibrierung(self)
         self.Templogger = Templog(self,self.Kalibrierung) #Klassenobjekt zur Temperaturmessung erstellen
         self.Kalibrierung.Templogger = self.Templogger
+        
+        #Programm Icon einstellen
+        photo = tk.PhotoImage(file = self.Templogger.programm_pfad + '/Bilder/Templogger_Icon.png')
+        self.root.wm_iconphoto(False, photo)
 
         #Menüleiste und Untermenüs erstellen
         self.menubar = tk.Menu(self.root, background='#22376F', foreground='white', activebackground='white', activeforeground='black') #Menüleiste erstellen

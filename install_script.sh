@@ -120,7 +120,7 @@ else
     echo "Boot Logo wurde nicht geaendert"
     fehler=$(( fehler + 1 ))
 fi
-#read a
+read a
 
 
 echo "########################################################################"

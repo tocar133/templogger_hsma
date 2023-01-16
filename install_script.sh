@@ -93,14 +93,16 @@ else
     fehler=$(( fehler + 1 ))
 fi
 
-sed -i '5s;.*;desktop_bg=#FFFFFF;' "/home/$user/.config/pcmanfm/LXDE-pi/desktop-items-0.conf"if [ $? -eq 0 ]; then
+sed -i '5s;.*;desktop_bg=#FFFFFF;' "/home/$user/.config/pcmanfm/LXDE-pi/desktop-items-0.conf"
+if [ $? -eq 0 ]; then
     echo "Desktophintergrundfarbe wurde geaendert"
 else
     echo "Desktophintergrundfarbe wurde nicht geaendert"
     fehler=$(( fehler + 1 ))
 fi
 
-sed -i '6s;.*;desktop_fg=#000000;' "/home/$user/.config/pcmanfm/LXDE-pi/desktop-items-0.conf"if [ $? -eq 0 ]; then
+sed -i '6s;.*;desktop_fg=#000000;' "/home/$user/.config/pcmanfm/LXDE-pi/desktop-items-0.conf"
+if [ $? -eq 0 ]; then
     echo "Desktop Schriftfarbe wurde geaendert"
 else
     echo "Desktop Schriftfarbe wurde nicht geaendert"

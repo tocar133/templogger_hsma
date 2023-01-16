@@ -75,6 +75,53 @@ fi
 #read a
 
 echo "########################################################################"
+echo "Desktop Hintergrund und Schriftfarbe aendern"
+
+sed -i '2s;.*;wallpaper_mode=fit;' "/home/$user/.config/pcmanfm/LXDE-pi/desktop-items-0.conf"
+if [ $? -eq 0 ]; then
+    echo "Hintergrund Darstellungsmode wurde geaendert"
+else
+    echo "Hintergrund Darstellungsmode wurde nicht geaendert"
+    fehler=$(( fehler + 1 ))
+fi
+
+sed -i "4s;.*;wallpaper=$script_ordner_pfad/Bilder/Desktop_Background.svg;" "/home/$user/.config/pcmanfm/LXDE-pi/desktop-items-0.conf"
+if [ $? -eq 0 ]; then
+    echo "Hintergrundbild wurde geaendert"
+else
+    echo "Hintergrundbild wurde nicht geaendert"
+    fehler=$(( fehler + 1 ))
+fi
+
+sed -i '5s;.*;desktop_bg=#FFFFFF;' "/home/$user/.config/pcmanfm/LXDE-pi/desktop-items-0.conf"if [ $? -eq 0 ]; then
+    echo "Desktophintergrundfarbe wurde geaendert"
+else
+    echo "Desktophintergrundfarbe wurde nicht geaendert"
+    fehler=$(( fehler + 1 ))
+fi
+
+sed -i '6s;.*;desktop_fg=#000000;' "/home/$user/.config/pcmanfm/LXDE-pi/desktop-items-0.conf"if [ $? -eq 0 ]; then
+    echo "Desktop Schriftfarbe wurde geaendert"
+else
+    echo "Desktop Schriftfarbe wurde nicht geaendert"
+    fehler=$(( fehler + 1 ))
+fi
+#read a
+
+echo "########################################################################"
+echo "Boot Logo aendern"
+
+sudo cp "$script_ordner_pfad/Bilder/boot_logo.png" /usr/share/plymouth/themes/pix/splash.png
+if [ $? -eq 0 ]; then
+    echo "Boot Logo wurde geaendert"
+else
+    echo "Boot Logo wurde nicht geaendert"
+    fehler=$(( fehler + 1 ))
+fi
+#read a
+
+
+echo "########################################################################"
 echo "update startet"
 sudo apt-get update
 if [ $? -eq 0 ]; then
@@ -278,15 +325,15 @@ hdmi_mode=87
 hdmi_cvt 1280 800 60 6 0 0 0
 hdmi_drive=1" >> '/boot/config.txt'
 if [ $? -eq 0 ]; then
-    echo "Konfiguration für Display erfolgreich"
+    echo "Konfiguration fuer Display erfolgreich"
 else
-    echo "Konfiguration für Display nicht erfolgreich"
+    echo "Konfiguration fuer Display nicht erfolgreich"
     fehler=$(( fehler + 1 ))
 fi
 #read a
 
 echo "########################################################################"
-echo "Tool für Display Helligkeit installieren"
+echo "Tool fuer Display Helligkeit installieren"
 git clone https://github.com/waveshare/RPi-USB-Brightness "$script_ordner_pfad/RPi-USB-Brightness"
 if [ $? -eq 0 ]; then
     echo "Helligkeitstool wurde heruntergeladen"
@@ -313,7 +360,7 @@ echo "Fertig"
 if [ $fehler -gt 0 ]; then
     echo "Bei $fehler Installationsschritten traten Fehler auf"
 fi
-echo "Wollen Sie das Gerät jetzt neustarten? (y/n)"
+echo "Wollen Sie das Geraet jetzt neustarten? (y/n)"
 echo "########################################################################"
 
 read eingabe

@@ -77,6 +77,45 @@ fi
 echo "########################################################################"
 echo "Desktop Hintergrund und Schriftfarbe aendern"
 
+if [ -d "/home/$user/.config/pcmanfm" ]; then
+    echo "/home/$user/.config/pcmanfm existiert bereits"
+else
+    sudo mkdir "/home/$user/.config/pcmanfm"
+    echo "pcmanfm Ordner erstellt"
+fi
+if [ -d "/home/$user/.config/pcmanfm/LXDE-pi" ]; then
+    echo "/home/$user/.config/pcmanfm/LXDE-pi existiert bereits"
+else
+    sudo mkdir "/home/$user/.config/pcmanfm/LXDE-pi"
+    echo "LXDE-pi Ordner erstellt"
+fi
+if test -f "/home/$user/.config/pcmanfm/LXDE-pi/desktop-items-0.conf"; then
+    echo "/home/$user/.config/pcmanfm/LXDE-pi/desktop-items-0.conf existiert bereits."
+else
+    sudo echo "[*]
+wallpaper_mode=crop
+wallpaper_common=1
+wallpaper=/usr/share/rpd-wallpaper/clouds.jpg
+desktop_bg=#d6d3de
+desktop_fg=#e8e8e8
+desktop_shadow=#d6d3de
+desktop_font=PibotoLt 12
+show_wm_menu=0
+sort=mtime;ascending;
+show_documents=0
+show_trash=1
+show_mounts=1
+
+" >> "/home/$user/.config/pcmanfm/LXDE-pi/desktop-items-0.conf"
+    if [ $? -eq 0 ]; then
+        sudo chown "$user":"$user" "/home/$user/.config/pcmanfm/LXDE-pi/desktop-items-0.conf"
+        echo "pcmanfm Desktop config Datei erstellt"
+    else
+        echo "pcmanfm Desktop config Datei wurde nicht erstellt"
+        fehler=$(( fehler + 1 ))
+    fi
+fi
+
 sed -i '2s;.*;wallpaper_mode=fit;' "/home/$user/.config/pcmanfm/LXDE-pi/desktop-items-0.conf"
 if [ $? -eq 0 ]; then
     echo "Hintergrund Darstellungsmode wurde geaendert"
@@ -120,7 +159,7 @@ else
     echo "Boot Logo wurde nicht geaendert"
     fehler=$(( fehler + 1 ))
 fi
-read a
+#read a
 
 
 echo "########################################################################"

@@ -21,6 +21,7 @@ import platform
 import sys
 import datetime
 import time
+import socket
 #import traceback
 import dateutil
 import subprocess
@@ -238,13 +239,17 @@ class Templog():
     def vorbereitung(self, zeitraum, darstellungsrate, popup_window):
         popup_window.destroy() #Schließe das Pop Up Fenster für die Eingaben der Mess- und Protokollierungsparameter
         #Wenn momentan eine andere Messung läuft, dann...
-        if self.messung_gestartet:
-            antwort = messagebox.askyesno(title="Messung beenden?", message="Wollen Sie die aktuelle Messung beenden?") #Öffne ein Fenster und frage ob die aktuelle Messung beendent werden soll
-            #Wenn die Messung beendet werden soll, dann beende die Messung, wenn nicht dann verlasse die Funktion
-            if antwort:
-                self.stop_messung()
-            else:
-                return False
+        if not self.GUI.check_stop():
+            return False
+
+        #if self.messung_gestartet:
+        #    antwort = messagebox.askyesno(title="Messung beenden?", message="Wollen Sie die aktuelle Messung beenden?") #Öffne ein Fenster und frage ob die aktuelle Messung beendent werden soll
+        #    #Wenn die Messung beendet werden soll, dann beende die Messung, wenn nicht dann verlasse die Funktion
+        #    if antwort:
+        #        self.stop_messung()
+        #    else:
+        #        return False
+
         #self.GUI.zeitraum_einagbe.delete(0,tk.END)
         #self.GUI.zeitraum_einagbe.insert(0,zeitraum)
         self.GUI.neuer_zeitraum_var.set(zeitraum)
@@ -729,7 +734,9 @@ class GUI():
         self.options.add_command(label='PT100-Temperatursensoren kalibrieren',font = ("", 15), command=self.Kalibrierung.start_kalibrieren) #Untermenüpunkt zum starten der Sensorkalibrierung
         self.options.add_separator() #Trennstrich zwischen den Untermenüpunkten
         self.options.add_command(label="Messungen pausieren",font = ("", 15), command=self.messung_pausieren) #Untermenüpunkt zum pausieren der Messung bzw. zum fortsetzen einer pausierten Messung
-        self.options.add_command(label="Messungen stoppen",font = ("", 15), command=self.Templogger.stop_messung) #Untermenüpunkt zum stoppen der akutellen Messung
+        self.options.add_command(label="Messungen stoppen",font = ("", 15), command=self.check_stop) #Untermenüpunkt zum stoppen der akutellen Messung
+        self.options.add_separator() #Trennstrich zwischen den Untermenüpunkten
+        self.options.add_command(label="IP-Adresse anzeigen",font = ("", 15), command=self.show_ip_adresse) #Untermenüpunkt zum anzeigen der aktuellen IP-Adresse
         self.options.add_command(label="Programm neu starten",font = ("", 15), command=self.restart) #Untermenüpunkt zum stoppen der aktuellen Messung und zum neustarten des Programms
         self.options.add_command(label="Beenden",font = ("", 15), command=self.close) #Untermenüpunkt zum beenden des Programms
 
@@ -748,7 +755,7 @@ class GUI():
             self.differenzGraphsMenu.entryconfig(2, state="disabled")
             self.loadGraphs.entryconfig(2, state="disabled")
             self.options.entryconfig(0, state="disabled")
-            self.options.entryconfig(4, state="disabled")
+            self.options.entryconfig(6, state="disabled")
         self.options.entryconfig(2, state="disabled")
         self.options.entryconfig(3, state="disabled")
 
@@ -810,7 +817,7 @@ class GUI():
         self.bild_stopp = PhotoImage(file = self.Templogger.programm_pfad + "/Bilder/stopp.png")
         self.bild_pause = PhotoImage(file = self.Templogger.programm_pfad + "/Bilder/pause.png")
 
-        self.stop_button = tk.Button(self.sensor_frame,command=self.Templogger.stop_messung,image=self.bild_stopp,state="disabled")
+        self.stop_button = tk.Button(self.sensor_frame,command=self.check_stop,image=self.bild_stopp,state="disabled")
         self.stop_button.grid(row=0,column=7,rowspan=2)
         self.pause_button = tk.Button(self.sensor_frame,command=self.messung_pausieren,image=self.bild_pause,state="disabled")
         self.pause_button.grid(row=0,column=9,rowspan=2)
@@ -900,6 +907,13 @@ class GUI():
     #Funktion zum Öffnen des Speicherorts der Protokolle
     def open_save_folder(self):
         os.system('xdg-open {}/Saves/'.format(self.Templogger.programm_pfad))
+
+    #Funktion um die aktuelle IP-Adresse anzuzeigen
+    def show_ip_adresse(self):
+        hostname = socket.gethostname()
+        ipadresse = socket.gethostbyname(hostname)
+        messagebox.showinfo(title="IP-Adresse", message="Die IP-Adresse lautet {}".format(ipadresse))
+
 
     #Funktion zum schließen der offenen Bildschirmtastaturen
     def close_keyboard(self):
@@ -2267,16 +2281,31 @@ class GUI():
         if not kalibriert:
             messagebox.showwarning(parent=popup_window,title = "Nicht kalibriert", message = "Das geladene Protokoll enthält Daten aus einer nicht kalibrierten Messung.")
 
+    #Funktion zur Prüfung, ob die aktuelle Messung wirklich beendet werden soll
+    def check_stop(self):
+        if self.Templogger.messung_gestartet:
+            antwort = messagebox.askyesno(title="Messung beenden?", message="Wollen Sie die aktuelle Messung beenden?") #Öffne ein Fenster und frage ob die aktuelle Messung beendent werden soll
+            #Wenn die Messung beendet werden soll, dann beende die Messung, wenn nicht dann verlasse die Funktion
+            if antwort:
+                self.Templogger.stop_messung()
+                return True
+            return False
+        return True
+
     #Funktion zum schließen des Fensters
     def close(self):
-        self.Templogger.stop_messung() #Rufe die Funktion zum beenden der Messung auf
+        #self.Templogger.stop_messung() #Rufe die Funktion zum beenden der Messung auf
+        if not self.check_stop(): #Abfragen ob die Messung beendet werden soll
+            return
         #schließe das Fenster
         self.root.quit()
         self.root.destroy()
 
     #Funktion zum neustarten des Programms
     def restart(self):
-        self.Templogger.stop_messung() #Beenden der aktuellen Messung
+        #self.Templogger.stop_messung() #Beenden der aktuellen Messung
+        if not self.check_stop(): #Abfragen ob die Messung beendet werden soll
+            return
         #Programm schließen und erneut starten
         os.execv(sys.executable, ['python3'] + sys.argv)
 

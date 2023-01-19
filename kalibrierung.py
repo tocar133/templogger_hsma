@@ -54,13 +54,15 @@ class Kalibrierung():
     #Funktion zum starten der Kalibrierung
     def start_kalibrieren(self):
         #Wenn momentan eine Messung läuft, dann...
-        if self.Templogger.messung_gestartet:
-            antwort = messagebox.askyesno(title="Messung beenden?", message="Wollen Sie die aktuelle Messung beenden?") #Öffne ein Fenster und frage ob die aktuelle Messung beendent werden soll
-            #Wenn die Messung beendet werden soll, dann beende die Messung, wenn nicht dann verlasse die Funktion
-            if antwort:
-                self.Templogger.stop_messung()
-            else:
-                return False
+        if not self.GUI.check_stop():
+            return False
+        #if self.Templogger.messung_gestartet:
+        #    antwort = messagebox.askyesno(title="Messung beenden?", message="Wollen Sie die aktuelle Messung beenden?") #Öffne ein Fenster und frage ob die aktuelle Messung beendent werden soll
+        #    #Wenn die Messung beendet werden soll, dann beende die Messung, wenn nicht dann verlasse die Funktion
+        #    if antwort:
+        #        self.Templogger.stop_messung()
+        #    else:
+        #        return False
         #Setze die Kalibrierungswerte des Klassenobjekts zurück
         self.temps0 = None
         self.temps100 = None

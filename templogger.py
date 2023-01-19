@@ -910,9 +910,20 @@ class GUI():
 
     #Funktion um die aktuelle IP-Adresse anzuzeigen
     def show_ip_adresse(self):
-        hostname = socket.gethostname()
-        ipadresse = socket.gethostbyname(hostname)
-        messagebox.showinfo(title="IP-Adresse", message="Die IP-Adresse lautet {}".format(ipadresse))
+        #hostname = socket.gethostname()
+        #ipadresse = socket.gethostbyname(hostname)
+        ipadresse = "";
+        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        try:
+            s.connect(("8.8.8.8",80))
+            ipadresse = s.getsockname()[0]
+        except:
+            None
+        s.close()
+        if ipadresse == "":
+            messagebox.showinfo(title="Kein Netzwerk", message="Es besteht keine Netzwerkverbindung".format(ipadresse))
+        else:
+            messagebox.showinfo(title="IP-Adresse", message="Die IP-Adresse lautet {}".format(ipadresse))
 
 
     #Funktion zum schließen der offenen Bildschirmtastaturen

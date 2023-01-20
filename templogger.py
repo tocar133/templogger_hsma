@@ -440,13 +440,13 @@ class Templog():
             
             #Bei einer Echtzeitmessung soll der Datensatz aus Zeitstempel und der 4 Temperaturwerte bestehen
             if sen2 == None:
-                #datensatz = [self.zeit_stempel.strftime("%Y.%m.%d %H:%M:%S"), self.temp_sen1, self.temp_sen2, self.temp_sen3, self.temp_sen4] #Datensatz bilden
-                datensatz = [self.zeit_stempel.strftime("%Y.%m.%d %H:%M:%S"),str(self.temp_sen1).replace(".",","),str(self.temp_sen2).replace(".",","),str(self.temp_sen3).replace(".",","),str(self.temp_sen4).replace(".",",")]
+                #datensatz = [self.zeit_stempel.strftime("%d.%m.%Y %H:%M:%S"), self.temp_sen1, self.temp_sen2, self.temp_sen3, self.temp_sen4] #Datensatz bilden
+                datensatz = [self.zeit_stempel.strftime("%d.%m.%Y %H:%M:%S"),str(self.temp_sen1).replace(".",","),str(self.temp_sen2).replace(".",","),str(self.temp_sen3).replace(".",","),str(self.temp_sen4).replace(".",",")]
             #Bei einer Differenzmessung soll der Datensatz aus dem Zeitstempel und der Differenztemperatur der gewählten Sensoren bestehen
             else:
                 temp1 = [self.temp_sen1,self.temp_sen2,self.temp_sen3,self.temp_sen4][sen1-1] #Temperaturwerte der gewählten Sensoren auswählen
                 temp2 = [self.temp_sen1,self.temp_sen2,self.temp_sen3,self.temp_sen4][sen2-1]
-                datensatz = [self.zeit_stempel.strftime("%Y.%m.%d %H:%M:%S"), str(round(temp1-temp2,3)).replace(".",",")] #Datensatz bilden
+                datensatz = [self.zeit_stempel.strftime("%d.%m.%Y %H:%M:%S"), str(round(temp1-temp2,3)).replace(".",",")] #Datensatz bilden
             #Wenn der Header bereits geschrieben ist, prüfe ob es die Protokolldatei noch gibt um zu ermitteln ob der Header in einer neuen Datei erneut geschrieben werden muss
             if header_geschrieben:
                 header_geschrieben = os.path.exists(dateipfad) #Prüfen ob die Protokolldatei bereits existiert
@@ -455,7 +455,7 @@ class Templog():
             if self.kalibrierfehler:
                 kalibrierung = " (unkalibriert)"
             if not self.timer_run.is_set():
-                datensatz = ["Messung wurd pausiert",self.zeit_stempel.strftime("%Y.%m.%d %H:%M:%S")]
+                datensatz = ["Messung wurd pausiert",self.zeit_stempel.strftime("%d.%m.%Y %H:%M:%S")]
             #Protokolldatei zum erweitern öffnen
             with open(dateipfad, 'a', newline='',encoding="windows-1251") as datei:
                 schreiber = csv.writer(datei,delimiter=';') #Variable zum schreiben in die Protokolldatei erstellen
@@ -470,7 +470,7 @@ class Templog():
                     else:
                         #Schreibe die Beschreibung der Differenzmessung in die ersten 2 Zeilen der Protokolldatei
                         schreiber.writerow(["Differenztemperaturlogger{} wurde am {} um {} gestartet.".format(kalibrierung,start.strftime("%d.%m.%Y"),start.strftime("%H:%M:%S"))])
-                        schreiber.writerow(["Zeitstempel","Sensor {} - Sensor {} [" + u"\u00B0" + "C]".format(sen1,sen2)])
+                        schreiber.writerow(["Zeitstempel","Sensor {} - Sensor {} [".format(sen1,sen2) + u"\u00B0" + "C]"])
                 header_geschrieben = True #Flag setzten zur Markierung, dass der Header geschrieben wurde
                 #Schreibe den Datensatz in die Protokolldatei
                 schreiber.writerow(datensatz)
@@ -1041,7 +1041,7 @@ class GUI():
             self.pause_button["image"] = self.bild_pause
 
             self.Templogger.timer_run.clear() #Lösche die Flag um die Messung zu pausieren
-            print("{} Messung pausiert".format(datetime.datetime.now().strftime("%Y.%m.%d %H:%M:%S")))
+            print("{} Messung pausiert".format(datetime.datetime.now().strftime("%d.%m.%Y %H:%M:%S")))
         #Wenn eine Messung pausiert ist, dann...
         else:
             self.options.entryconfigure(2,label="Messung pausieren") #Ändere den Text des Menüeintrags
@@ -1051,7 +1051,7 @@ class GUI():
 
             #Setze die Flag zum fortsetzen der Messung
             self.Templogger.timer_run.set()
-            print("{} Messung fortgesetzt".format(datetime.datetime.now().strftime("%Y.%m.%d %H:%M:%S")))
+            print("{} Messung fortgesetzt".format(datetime.datetime.now().strftime("%d.%m.%Y %H:%M:%S")))
 
     #Funktion wechseln des Objekts beim drücken der Tabulatortaste
     def next_element(self,event):
@@ -1239,7 +1239,7 @@ class GUI():
         differenz_log = False #setzte die Flag um zu markieren das es sich um ein Temperaturprotokoll handelt
         kalibriert = True
         #Protokolldatei zum lesen öffnen
-        with open(pfad, 'r') as datei:
+        with open(pfad, 'r',encoding="windows-1251") as datei:
             csv_zeilen = list(csv.reader(datei,delimiter=';')) #Inhalt der Protokolldatei in eine Liste speichern
             
         daten = csv_zeilen #setze die Daten auf die ausgelesenen Daten
@@ -1315,7 +1315,7 @@ class GUI():
             messagebox.showerror(title = "Ungültiger Dateipfad", message = "Bitte geben Sie einen gültigen Dateipfad ein.")
             return
         #Protokolldatei zum lesen öffnen
-        with open(pfad, 'r') as datei:
+        with open(pfad, 'r',encoding="windows-1251") as datei:
             csv_zeilen = list(csv.reader(datei,delimiter=';')) #Inhalt der Protokolldatei in eine Liste speichern
             #Wenn in der Protokolldatei in der ersten Zeile der erste Buchstabe ein "D" ist, dann zeige ein Fenster mit einer Fehlermeldung und verlasse die Funktion
         kalibriert = True
@@ -1978,7 +1978,7 @@ class GUI():
         
             #Formatiere die X-Achse
             locator = mdates.AutoDateLocator(minticks=8, maxticks=12)
-            formatter = mdates.DateFormatter('%Y.%m.%d %H:%M:%S')
+            formatter = mdates.DateFormatter('%d.%m.%Y %H:%M:%S')
             ax.xaxis.set_major_locator(locator)
             ax.xaxis.set_major_formatter(formatter)
             fig.autofmt_xdate(rotation=15,bottom=0.15)
@@ -2019,30 +2019,41 @@ class GUI():
                     continue #Führe die For Schleife mit dem nächsten Listenelement fort
                 #Versuche der Liste den Zeitstempel mit dem Format hinzuzufügen
                 try:
-                    datumlist = np.append(datumlist,datetime.datetime.strptime(zeile[0],"%Y.%m.%d %H:%M:%S"))
+                    datumlist = np.append(datumlist,datetime.datetime.strptime(zeile[0],"%d.%m.%Y %H:%M:%S"))
                 #Wenn es dabei ein Fehler gab, dann...
                 except:
-                    #Versuche das Format des Zeitstempels zu erkennen
+                    #Versuche der Liste den Zeitstempel mit dem Format hinzuzufügen nachdem die Datei durch Excel geändert wurde
                     try:
-                        datumlist = np.append(datumlist,dateutil.parser.parse(zeile[0]))
-                    #Wenn es ein Fehler gab, dann...
+                        datumlist = np.append(datumlist,datetime.datetime.strptime(zeile[0],"%d.%m.%Y %H:%M"))
+                    #Wenn es dabei ein Fehler gab, dann...
                     except:
-                        #Wenn der Anfang der Zeile Differenztemperaturlogger oder Temperaturlogger ist, dann...
-                        if zeile[0][0:25] == "Differenztemperaturlogger" or zeile[0][0:16] == "Temperaturlogger":
-                            header = True #setze die Flag zum markieren das die nächste Zeile die 2. Headerzeile ist
-                            continue #Führe die For Schleife mit dem nächsten Listenelement fort
-                        if zeile[0] == "Messung wurd pausiert":
+                        #Versuche der Liste den Zeitstempel mit dem einem anderen Format hinzuzufügen
+                        try:
+                            datumlist = np.append(datumlist,datetime.datetime.strptime(zeile[0],"%Y.%m.%d %H:%M:%S"))
+                        #Wenn es dabei ein Fehler gab, dann...
+                        except:
+                            #Versuche das Format des Zeitstempels zu erkennen
                             try:
-                                datumlist = np.append(datumlist,datetime.datetime.strptime(zeile[1],"%Y.%m.%d %H:%M:%S"))
-                                sensor1list = np.append(sensor1list,None)
-                                if not differenz_log:
-                                    sensor2list = np.append(sensor2list,None)
-                                    sensor3list = np.append(sensor3list,None)
-                                    sensor4list = np.append(sensor4list,None)
-                                continue
-                            except: None
-                        fehler_flag = True #Wenn die Zeile mit etwas anderem startet, dann setze die Flag zum markieren, das es ein Fehler gab
-                        continue #Führe die For Schleife mit dem nächsten Listenelement fort
+                                datumlist = np.append(datumlist,dateutil.parser.parse(zeile[0]))
+                                print(dateutil.parser.parse(zeile[0]))
+                            #Wenn es ein Fehler gab, dann...
+                            except:
+                                #Wenn der Anfang der Zeile Differenztemperaturlogger oder Temperaturlogger ist, dann...
+                                if zeile[0][0:25] == "Differenztemperaturlogger" or zeile[0][0:16] == "Temperaturlogger":
+                                    header = True #setze die Flag zum markieren das die nächste Zeile die 2. Headerzeile ist
+                                    continue #Führe die For Schleife mit dem nächsten Listenelement fort
+                                if zeile[0] == "Messung wurd pausiert":
+                                    try:
+                                        datumlist = np.append(datumlist,datetime.datetime.strptime(zeile[1],"%d.%m.%Y %H:%M:%S"))
+                                        sensor1list = np.append(sensor1list,None)
+                                        if not differenz_log:
+                                            sensor2list = np.append(sensor2list,None)
+                                            sensor3list = np.append(sensor3list,None)
+                                            sensor4list = np.append(sensor4list,None)
+                                        continue
+                                    except: None
+                                fehler_flag = True #Wenn die Zeile mit etwas anderem startet, dann setze die Flag zum markieren, das es ein Fehler gab
+                                continue #Führe die For Schleife mit dem nächsten Listenelement fort
                 #Versuche den Temperaturwert der Liste hinzuzufügen
                 try:
                     sensor1list = np.append(sensor1list,round(float(zeile[1].replace(",",".")),3))
@@ -2162,7 +2173,7 @@ class GUI():
                 toolbar._Button("Sensor 2",None,None,lambda:change_graph(1))
                 toolbar._Button("Sensor 3",None,None,lambda:change_graph(2))
                 toolbar._Button("Sensor 4",None,None,lambda:change_graph(3))
-                toolbar._Button("Daten anzeigen",None,None,lambda: self.show_protokoll_data(daten,dateiname,differenz_log,sen1,sen2,kalibriert))
+            toolbar._Button("Daten anzeigen",None,None,lambda: self.show_protokoll_data(daten[2:],dateiname,differenz_log,sen1,sen2,kalibriert))
 
         #Wenn es ein Fehler beim lesen oder darstellen des Protokolls gab, dann gebe eine Fehlermeldung aus und schließe das Fenster für den Graph
         except Exception:
@@ -2195,7 +2206,7 @@ class GUI():
             ax.autoscale(enable=True, axis="both")
             #Formatiere die X-Achse
             locator = mdates.AutoDateLocator(minticks=8, maxticks=12, interval_multiples=True)
-            formatter = mdates.DateFormatter('%Y.%m.%d %H:%M:%S')
+            formatter = mdates.DateFormatter('%d.%m.%Y %H:%M:%S')
             ax.xaxis.set_major_locator(locator)
             ax.xaxis.set_major_formatter(formatter)
             fig.autofmt_xdate(rotation=15,bottom=0.15)
@@ -2228,26 +2239,36 @@ class GUI():
                     continue #Führe die For Schleife mit dem nächsten Listenelement fort
                 #Versuche der Liste den Zeitstempel mit dem Format hinzuzufügen
                 try:
-                    datumlist = np.append(datumlist,datetime.datetime.strptime(zeile[0],"%Y.%m.%d %H:%M:%S"))
+                    datumlist = np.append(datumlist,datetime.datetime.strptime(zeile[0],"%d.%m.%Y %H:%M:%S"))
                 #Wenn es dabei ein Fehler gab, dann...
                 except:
-                    #Versuche das Format des Zeitstempels zu erkennen
+                    #Versuche der Liste den Zeitstempel mit dem Format hinzuzufügen nachdem die Datei durch Excel geändert wurde
                     try:
-                        datumlist = np.append(datumlist,dateutil.parser.parse(zeile[0]))
-                    #Wenn es ein Fehler gab, dann...
+                        datumlist = np.append(datumlist,datetime.datetime.strptime(zeile[0],"%d.%m.%Y %H:%M"))
+                    #Wenn es dabei ein Fehler gab, dann...
                     except:
-                        #Wenn der Anfang der Zeile Temperaturlogger ist, dann...
-                        if zeile[0][0:16] == "Temperaturlogger":
-                            header = True #setze die Flag zum markieren das die nächste Zeile die 2. Headerzeile ist
-                            continue #Führe die For Schleife mit dem nächsten Listenelement fort
-                        if zeile[0] == "Messung wurd pausiert":
+                        #Versuche der Liste den Zeitstempel mit dem einem anderen Format hinzuzufügen
+                        try:
+                            datumlist = np.append(datumlist,datetime.datetime.strptime(zeile[0],"%Y.%m.%d %H:%M:%S"))
+                        #Wenn es dabei ein Fehler gab, dann...
+                        except:
+                            #Versuche das Format des Zeitstempels zu erkennen
                             try:
-                                datumlist = np.append(datumlist,datetime.datetime.strptime(zeile[1],"%Y.%m.%d %H:%M:%S"))
-                                differenzliste = np.append(differenzliste,None)
-                                continue
-                            except: None
-                        fehler_flag = True #Wenn die Zeile mit etwas anderem startet, dann setze die Flag zum markieren, das es ein Fehler gab
-                        continue #Führe die For Schleife mit dem nächsten Listenelement fort
+                                datumlist = np.append(datumlist,dateutil.parser.parse(zeile[0]))
+                            #Wenn es ein Fehler gab, dann...
+                            except:
+                                #Wenn der Anfang der Zeile Temperaturlogger ist, dann...
+                                if zeile[0][0:16] == "Temperaturlogger":
+                                    header = True #setze die Flag zum markieren das die nächste Zeile die 2. Headerzeile ist
+                                    continue #Führe die For Schleife mit dem nächsten Listenelement fort
+                                if zeile[0] == "Messung wurd pausiert":
+                                    try:
+                                        datumlist = np.append(datumlist,datetime.datetime.strptime(zeile[1],"%d.%m.%Y %H:%M:%S"))
+                                        differenzliste = np.append(differenzliste,None)
+                                        continue
+                                    except: None
+                                fehler_flag = True #Wenn die Zeile mit etwas anderem startet, dann setze die Flag zum markieren, das es ein Fehler gab
+                                continue #Führe die For Schleife mit dem nächsten Listenelement fort
                 #Versuche den Temperaturwert der Liste hinzuzufügen
                 try:
                     differenzliste = np.append(differenzliste,float(zeile[sen1].replace(",",".")) - float(zeile[sen2].replace(",",".")))

@@ -1,5 +1,5 @@
 Temperaturlogger wurde am 21.10.2022 um 02:08:38 gestartet.;;;;
-Zeitstempel;Sensor 1;Sensor 2;Sensor 3;Sensor 4
+Zeitstempel;Sensor 1 [°C];Sensor 2 [°C];Sensor 3 [°C];Sensor 4 [°C]
 21.10.2022 02:08;21,903;30,577;-830,005;-830,005
 21.10.2022 02:09;21,971;31,695;-830,005;-830,005
 21.10.2022 02:09;21,971;31,661;-830,005;-830,005

@@ -457,7 +457,7 @@ class Templog():
             if not self.timer_run.is_set():
                 datensatz = ["Messung wurd pausiert",self.zeit_stempel.strftime("%Y.%m.%d %H:%M:%S")]
             #Protokolldatei zum erweitern öffnen
-            with open(dateipfad, 'a', newline='') as datei:
+            with open(dateipfad, 'a', newline='',encoding="windows-1251") as datei:
                 schreiber = csv.writer(datei,delimiter=';') #Variable zum schreiben in die Protokolldatei erstellen
                 #Wenn die Protokolldatei nicht existiert, dann...
                 if not header_geschrieben:
@@ -465,12 +465,12 @@ class Templog():
                     if sen2 == None:
                         #Schreibe die Beschreibung der Echtzeitmessung in die ersten 2 Zeilen der Protokolldatei
                         schreiber.writerow(["Temperaturlogger{} wurde am {} um {} gestartet.".format(kalibrierung,start.strftime("%d.%m.%Y"),start.strftime("%H:%M:%S"))])
-                        schreiber.writerow(["Zeitstempel","Sensor 1 [°C]","Sensor 2 [°C]","Sensor 3 [°C]","Sensor 4 [°C]"])
+                        schreiber.writerow(["Zeitstempel","Sensor 1 [" + u"\u00B0" + "C]","Sensor 2 [" + u"\u00B0" + "C]","Sensor 3 [" + u"\u00B0" + "C]","Sensor 4 [" + u"\u00B0" + "C]"])
                     #Wenn es eine Differenzmessung ist, dann...
                     else:
                         #Schreibe die Beschreibung der Differenzmessung in die ersten 2 Zeilen der Protokolldatei
                         schreiber.writerow(["Differenztemperaturlogger{} wurde am {} um {} gestartet.".format(kalibrierung,start.strftime("%d.%m.%Y"),start.strftime("%H:%M:%S"))])
-                        schreiber.writerow(["Zeitstempel","Sensor {} - Sensor {} [°C]".format(sen1,sen2)])
+                        schreiber.writerow(["Zeitstempel","Sensor {} - Sensor {} [" + u"\u00B0" + "C]".format(sen1,sen2)])
                 header_geschrieben = True #Flag setzten zur Markierung, dass der Header geschrieben wurde
                 #Schreibe den Datensatz in die Protokolldatei
                 schreiber.writerow(datensatz)
@@ -523,7 +523,6 @@ class Templog():
             #print("graph update")
             self.Graph.update(anzeigen,None,None) #Funktion zum update des Graphen aufrufen
             self.zeichnen_fertig.set()
-        #print("zeichen thread beendet")
 
     #Funktion für den Thread für die Darstellung der Differenztemperatur im Graphen
     #Schleife zur wiederholten Darstellung der Differenzmessdaten im Graph, bis dieser über eine Flag beendet wird
@@ -565,7 +564,6 @@ class Templog():
             self.GUI.root.after_idle(lambda: self.GUI.update_treeview(datum,temp1,temp2)) #Textlog der letzten Darstellungszeitpunkte updaten
             #Flag setzten um zu signalisieren, dass der Graph neu gezeichnet wurde
             self.zeichnen_fertig.set()
-        #print("zeichen Thread beendet")
     
     #Funktion zum beenden der Threads
     def threads_stop(self,timer_thread,protokoll_thread,graph_thread,protokollieren_warten,zeichnen_warten):
@@ -924,7 +922,6 @@ class GUI():
             messagebox.showinfo(title="Kein Netzwerk", message="Es besteht keine Netzwerkverbindung".format(ipadresse))
         else:
             messagebox.showinfo(title="IP-Adresse", message="Die IP-Adresse lautet {}".format(ipadresse))
-
 
     #Funktion zum schließen der offenen Bildschirmtastaturen
     def close_keyboard(self):

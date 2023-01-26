@@ -564,47 +564,6 @@ class Templog():
             self.GUI.root.after_idle(lambda: self.GUI.update_treeview(datum,temp1,temp2)) #Textlog der letzten Darstellungszeitpunkte updaten
             #Flag setzten um zu signalisieren, dass der Graph neu gezeichnet wurde
             self.zeichnen_fertig.set()
-    
-    #Funktion zum beenden der Threads
-    def threads_stop(self,timer_thread,protokoll_thread,graph_thread,protokollieren_warten,zeichnen_warten):
-        #Wenn eine Messung gestartet wurde, dann beende die gestarteten Threads
-        if self.messung_gestartet:
-            #Wenn die Variable ein Thread ist, dann...
-            if timer_thread != None:
-                timer_thread.join() #Warte bis der Thread beendet ist
-            
-            #Wenn die Variable ein Thread ist, dann...
-            if protokoll_thread != None:
-                #Schleife bis der Thread beendet wurde
-                while True:
-                    #Wenn der Thread noch läuft, dann...
-                    if protokoll_thread.is_alive():
-                        #Thread aufwecken
-                        with protokollieren_warten:
-                            protokollieren_warten.notify()
-                        #Warten bis Thread beendet wurde, max Wartezeit 0,5 Sek
-                        protokoll_thread.join(0.5)
-                    #Wenn der Thread nicht läuft, dann Schleife verlassen
-                    else: break
-                    
-            #Wenn eine Messung gestartet wurde, dann beende die gestarteten Threads
-            if graph_thread != None:
-                #Schleife bis der Thread beendet wurde
-                while True:
-                    #Wenn der Thread noch läuft, dann...
-                    if graph_thread.is_alive():
-                        #Thread aufwecken
-                        with zeichnen_warten:
-                            zeichnen_warten.notify()
-                        #Warten bis Thread beendet wurde, max Wartezeit 0,5 Sek
-                        graph_thread.join(0.5)
-                    #Wenn der Thread nicht läuft, dann Schleife verlassen
-                    else: break
-
-            #Stop der Messung mit dem aktuellen Zeitstempel in der Konsole bekannt geben
-            print(datetime.datetime.now().strftime("%d.%m.%Y %H:%M:%S") + " Messung gestoppt")
-            #Flag löschen, dass keine Messung gestartet ist
-            self.messung_gestartet = 0
 
     #Funktion zum zurücksetzten der Bedienoberfläche und zum beenden der Messung
     def stop_messung(self):
@@ -635,9 +594,7 @@ class Templog():
         self.GUI.options.entryconfig(3, state="disabled")
         self.GUI.stop_button["state"] = "disabled"
         self.GUI.pause_button["state"] = "disabled"
-
-        #thr = threading.Thread(target=self.threads_stop,args=(self.sek_timer,self.running_protokoll,self.running_graph,self.protokollieren_warten,self.zeichnen_warten))
-        #thr.start()
+        
         #Wenn eine Messung gestartet wurde, dann beende die gestarteten Threads
         if self.messung_gestartet:
             #Wenn die Variable ein Thread ist, dann...
@@ -808,6 +765,11 @@ class GUI():
         self.sensor2_label.grid(row=1, column=2)
         self.sensor3_label.grid(row=1, column=3)
         self.sensor4_label.grid(row=1, column=4)
+        
+        self.sensor1_label.bind("<Button-1>", lambda e:self.sensor_label_click(1))
+        self.sensor2_label.bind("<Button-1>", lambda e:self.sensor_label_click(2))
+        self.sensor3_label.bind("<Button-1>", lambda e:self.sensor_label_click(3))
+        self.sensor4_label.bind("<Button-1>", lambda e:self.sensor_label_click(4))
 
         self.sensoren_pruefen = tk.Button(self.sensor_frame,text="Sensoren prüfen",command=self.check_sensoren)
         self.sensoren_pruefen.grid(row=0, column=5,rowspan=2)
@@ -905,6 +867,23 @@ class GUI():
     #Funktion zum Öffnen des Speicherorts der Protokolle
     def open_save_folder(self):
         os.system('xdg-open {}/Saves/'.format(self.Templogger.programm_pfad))
+
+    #Funktion zum ändern der Sensorcheckbox, wenn das Label geklickt wurde
+    def sensor_label_click(self,nummer):
+        if nummer == 1: #Abfrage welches Sensorlabel geklickt wurde
+            if self.sensor1_checkbox.cget("state") == "normal": #Wenn die Checkbox nicht gesperrt ist, dann...
+                self.sensorvar1.set(not self.sensorvar1.get()) #Wechsel 
+        elif nummer == 2:
+            if self.sensor2_checkbox.cget("state") == "normal":
+                self.sensorvar2.set(not self.sensorvar2.get())
+        elif nummer == 3:
+            if self.sensor3_checkbox.cget("state") == "normal":
+                self.sensorvar3.set(not self.sensorvar3.get())
+        elif nummer == 4:
+            if self.sensor4_checkbox.cget("state") == "normal":
+                self.sensorvar4.set(not self.sensorvar4.get())
+        # Funktion zum aktualisieren des Graphen aufrufen, wenn die Sensorauswahl geändert wurde
+        self.graph_aktualisieren()
 
     #Funktion um die aktuelle IP-Adresse anzuzeigen
     def show_ip_adresse(self):

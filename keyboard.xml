@@ -11,62 +11,42 @@
     <key fill='false'>
       <default display="q" />
       <shifted display="Q" />
-      <mod1    display="à" action="xkeysym:agrave"/>
-      <mod2    display="À" action="xkeysym:Agrave"/>
     </key>
     <key obey-caps='true' fill='false' width="1100">
       <default display="w" />
       <shifted display="W" />
-      <mod1    display="á" action="xkeysym:aacute"/>
-      <mod2    display="Á" action="xkeysym:Aacute"/>
     </key>
     <key obey-caps='true' fill='false' width="1100">
       <default display="e" />
       <shifted display="E" />
-      <mod1    display="â" action="xkeysym:acircumflex"/>
-      <mod2    display="Â" action="xkeysym:Acircumflex"/>
     </key>
     <key obey-caps='true' fill='false' width="1100">
       <default display="r" />
       <shifted display="R" />
-      <mod1    display="ã" action="xkeysym:atilde"/>ss
-      <mod2    display="Ã" action="xkeysym:Atilde"/>
     </key>
     <key obey-caps='true' fill='false' width="1100">
       <default display="t" />
       <shifted display="T" />
-      <mod1    display="ä" action="xkeysym:adiaeresis"/>
-      <mod2    display="Ä" action="xkeysym:Adiaeresis"/>
     </key>
     <key obey-caps='true' fill='false' width="1100">
       <default display="z" />
       <shifted display="Z" />
-      <mod1    display="õ" action="xkeysym:otilde"/>
-      <mod2    display="Õ" action="xkeysym:Otilde"/>
     </key>
     <key obey-caps='true' fill='false' width="1100">
       <default display="u" />
       <shifted display="U" />
-      <mod1    display="æ" action="xkeysym:ae"/>
-      <mod2    display="Æ" action="xkeysym:AE"/>
     </key>
     <key obey-caps='true' fill='false' width="1100">
       <default display="i" />
       <shifted display="I" />
-      <mod1    display="ç" action="xkeysym:ccedilla"/>
-      <mod2    display="Ç" action="xkeysym:Ccedilla"/>
     </key>
     <key obey-caps='true' fill='false' width="1100">
       <default display="o" />
       <shifted display="O" />
-      <mod1    display="è" action="xkeysym:egrave"/>
-      <mod2    display="È" action="xkeysym:Egrave"/>
     </key>
     <key obey-caps='true' fill='false' width="1100">
       <default display="p" />
       <shifted display="P" />
-      <mod1    display="é" action="xkeysym:eacute"/>
-      <mod2    display="É" action="xkeysym:Eacute"/>
     </key>
     <key width="2280">
       <default display="⇦" action="backspace" />
@@ -98,56 +78,38 @@
     <key obey-caps='true' fill='false' width="1100">
       <default display="a" />
       <shifted display="A" />
-      <mod1    display="ê" action="xkeysym:ecircumflex"/>
-      <mod2    display="Ê" action="xkeysym:Ecircumflex"/>
     </key>
     <key obey-caps='true' fill='false' width="1100">
       <default display="s" />
       <shifted display="S" />
-      <mod1    display="ë" action="xkeysym:ediaeresis"/>
-      <mod2    display="Ë" action="xkeysym:Ediaeresis"/>
     </key>
     <key obey-caps='true' fill='false' width="1100">
       <default display="d" />
       <shifted display="D" />
-      <mod1    display="ì" action="xkeysym:igrave"/>
-      <mod2    display="Ì" action="xkeysym:Igrave"/>
     </key>
     <key obey-caps='true' fill='false' width="1100">
       <default display="f" />
       <shifted display="F" />
-      <mod1    display="í" action="xkeysym:iacute"/>
-      <mod2    display="Í" action="xkeysym:Iacute"/>
     </key>
     <key obey-caps='true' fill='false' width="1100">
       <default display="g" />
       <shifted display="G" />
-      <mod1    display="î" action="xkeysym:icircumflex"/>
-      <mod2    display="Î" action="xkeysym:Icircumflex"/>
     </key>
     <key obey-caps='true' fill='false' width="1100">
       <default display="h" />
       <shifted display="H" />
-      <mod1    display="ï" action="xkeysym:idiaeresis"/>
-      <mod2    display="Ï" action="xkeysym:Idiaeresis"/>
     </key>
     <key obey-caps='true' fill='false' width="1100">
       <default display="j" />
       <shifted display="J" />
-      <mod1    display="ð" action="xkeysym:eth"/>
-      <mod2    display="Ð" action="xkeysym:ETH"/>
     </key>
     <key obey-caps='true' fill='false' width="1100">
       <default display="k" />
       <shifted display="K" />
-      <mod1    display="ñ" action="xkeysym:ntilde"/>
-      <mod2    display="Ñ" action="xkeysym:Ntilde"/>
     </key>
     <key obey-caps='true' fill='false' width="1100">
       <default display="l" />
       <shifted display="L" />
-      <mod1    display="ò" action="xkeysym:ograve"/>
-      <mod2    display="Ò" action="xkeysym:Ograve"/>
     </key>
 
     <key fill='false' width="1100">
@@ -176,50 +138,40 @@
   </row>
 
   <row>
-    <key width="3380">
-      <default display="ˢᵖᵃᶜᵉ" action="space" />
+    <key width="1650">
+      <default display="ˢᵗʳᵍ" action="modifier:ctrl" />
+    </key>
+    <key width="1650">
+      <!--<default display="ˢᵖᵃᶜᵉ" action="space" />-->
+      <default display="ₗₑₑᵣ" action="space" />
     </key>
     <key obey-caps='true' fill='false' width="1100">
       <default display="y" />
       <shifted display="Y" />
-      <mod1    display="å" action="xkeysym:aring"/>
-      <mod2    display="Å" action="xkeysym:Aring"/>
     </key>
     <key obey-caps='true' fill='false' width="1100">
       <default display="x" />
       <shifted display="X" />
-      <mod1    display="ö" action="xkeysym:odiaeresis"/>
-      <mod2    display="Ö" action="xkeysym:Odiaeresis"/>
     </key>
     <key obey-caps='true' fill='false' width="1100">
       <default display="c" />
       <shifted display="C" />
-      <mod1    display="ø" action="xkeysym:oslash"/>
-      <mod2    display="Ø" action="xkeysym:Oslash"/>
     </key>
     <key obey-caps='true' fill='false' width="1100">
       <default display="v" />
       <shifted display="V" />
-      <mod1    display="ù" action="xkeysym:ugrave"/>
-      <mod2    display="Ù" action="xkeysym:Ugrave"/>
     </key>
     <key obey-caps='true' fill='false' width="1100">
       <default display="b" />
       <shifted display="B" />
-      <mod1    display="ú" action="xkeysym:uacute"/>
-      <mod2    display="Ú" action="xkeysym:Uacute"/>
     </key>
     <key obey-caps='true' fill='false' width="1100">
       <default display="n" />
       <shifted display="N" />
-      <mod1    display="û" action="xkeysym:ucircumflex"/>
-      <mod2    display="Û" action="xkeysym:Ucircumflex"/>
     </key>
     <key obey-caps='true' fill='false' width="1100">
       <default display="m" />
       <shifted display="M" />
-      <mod1    display="ü" action="xkeysym:udiaeresis"/>
-      <mod2    display="Ü" action="xkeysym:Udiaeresis"/>
     </key>
 
     <key fill="false" width="1100">
